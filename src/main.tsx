@@ -2,14 +2,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
-import Layout from './components/Layout';
-import Register from './pages/Register';
-import Login from './pages/Login';
+import AuthLayout from './components/auth/AuthLayout';
+import Register from './components/auth/Register';
+import Login from './components/auth/Login';
 
 const router = createBrowserRouter([
   {
     path: '/',
-    element: <Layout />,
+    element: <AuthLayout />,
     children: [
       {
         path: '/',

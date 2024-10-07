@@ -1,14 +1,12 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
-import CustomInputComponent from '../components/InputComponent';
-
-/* Avoir un seul fichier et en fonction de la route, changer le form */
+import CustomInputComponent from '../InputComponent';
 
 const BasicForm = () => (
-  <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-12">
+  <div className="min-h-screen flex flex-col justify-center sm:py-12">
     <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
       <h1 className="font-bold text-center text-2xl mb-5">Inscription au jeu</h1>
-      <div className="bg-white shadow w-full rounded-lg divide-y divide-gray-200">
+      <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
         <Formik
           initialValues={{ email: '', password: '', confirmPassword: '', name: '', surname: '', username: '' }}
           validationSchema={Yup.object({
@@ -40,7 +38,7 @@ const BasicForm = () => (
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="transition duration-200 bg-blue-500 hover:bg-blue-600 focus:bg-blue-700 focus:shadow-sm focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-white w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
+                className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
               >
                 <span className="inline-block mr-2">Je m'inscris</span>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 inline-block">
@@ -51,12 +49,13 @@ const BasicForm = () => (
           )}
         </Formik>
 
+
         <div className="py-5">
           <div className="grid grid-cols-2 gap-1">
             <div className="text-center sm:text-left whitespace-nowrap">
               <button
                 type="button"
-                className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -78,7 +77,7 @@ const BasicForm = () => (
             <div className="text-center sm:text-right whitespace-nowrap">
               <button
                 type="button"
-                className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -95,6 +94,27 @@ const BasicForm = () => (
                   />
                 </svg>
                 <span className="inline-block ml-1">Aide</span>
+              </button>
+            </div>
+            <div className="text-center sm:text-right whitespace-nowrap">
+              <button
+              type="button"
+              className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  className="w-4 h-4 inline-block align-text-bottom">
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth="2"
+                    d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                    />
+                </svg>
+                <span className='inline-block inline-block ml-1'>Déjà inscrit ? Je me connecte</span>
               </button>
             </div>
           </div>
