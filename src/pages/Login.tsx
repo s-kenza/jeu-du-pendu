@@ -1,5 +1,6 @@
-import { Formik, Field, Form, ErrorMessage } from 'formik';
+import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
+import CustomInputComponent from '../components/CustomInputComponent';
 
 const BasicForm = () => (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-12">
@@ -21,17 +22,8 @@ const BasicForm = () => (
           >
             {({ isSubmitting }) => (
               <Form className="px-5 py-7">
-                <div className='mb-5'>
-                    <label htmlFor="email" className="font-semibold text-sm text-gray-600 pb-1 block">E-mail</label>
-                    <Field type="email" name="email" className="border rounded-lg px-3 py-2 mt-1 text-sm w-full" />
-                    <ErrorMessage name="email" component="div" className="text-red-500 text-xs mt-1" />
-                </div>
-                
-                <div className='mb-5'>
-                    <label htmlFor="password" className="font-semibold text-sm text-gray-600 pb-1 block">Mot de passe</label>
-                    <Field type="password" name="password" className="border rounded-lg px-3 py-2 mt-1 text-sm w-full" />
-                    <ErrorMessage name="password" component="div" className="text-red-500 text-xs mt-1" />
-                </div>
+                <Field name="email" label="E-mail" component={CustomInputComponent} />
+                <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 
                 <button type="submit" disabled={isSubmitting} className="transition duration-200 bg-blue-500 hover:bg-blue-600 focus:bg-blue-700 focus:shadow-sm focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 text-white w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block">
                   <span className="inline-block mr-2">Je me connecte</span>
@@ -43,7 +35,7 @@ const BasicForm = () => (
             )}
           </Formik>
           
-          {/* Additional Buttons and Links */}
+          {/* Boutons additionnels et Liens */}
           <div className="py-5">
                   <div className="grid grid-cols-2 gap-1">
                     <div className="text-center sm:text-left whitespace-nowrap">
