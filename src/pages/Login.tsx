@@ -1,6 +1,8 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
-import CustomInputComponent from '../components/CustomInputComponent';
+import CustomInputComponent from '../components/InputComponent';
+
+/* Avoir un seul fichier et en fonction de la route, changer le form */
 
 const BasicForm = () => (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center sm:py-12">
