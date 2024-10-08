@@ -16,6 +16,11 @@ services:
     networks:
       - db_network
 
+  mailcatcher:
+    restart: on-failure
+    image: schickling/mailcatcher
+    ports: [ 1025:1025, 1080:1080 ]
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin

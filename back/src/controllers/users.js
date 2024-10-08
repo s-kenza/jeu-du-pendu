@@ -1,5 +1,6 @@
 import User from "../models/users.js";
 import { Op } from "sequelize";
+import nodemailer from "nodemailer";
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -80,7 +81,19 @@ export async function registerUser(userDatas, bcrypt) {
 		email,
 		password: hashedPassword,
 	};
-	return await User.create(user);
+
+	const newUser = await User.create(user);
+  
+	if (newUser) {
+		try {
+		await sendVerificationEmail(newUser);
+		} catch (error) {
+		console.error("Erreur lors de l'envoi de l'email de vérification:", error);
+		// Vous pouvez choisir de gérer cette erreur comme vous le souhaitez
+		}
+	}
+
+	return newUser;
 }
 export async function loginUser(userDatas, app) {
 	if (!userDatas) {
@@ -121,3 +134,24 @@ export async function loginUser(userDatas, app) {
 	);
 	return { token };
 }
+async function sendVerificationEmail(user) {
+	let transporter = nodemailer.createTransport({
+	  host: 'localhost',
+	  port: 1025, // Port par défaut de MailCatcher
+	  secure: false,
+	  tls: {
+		rejectUnauthorized: false
+	  }
+	});
+  
+	let info = await transporter.sendMail({
+	  from: '"Votre Application" <noreply@votreapp.com>',
+	  to: user.email,
+	  subject: "Vérification de votre compte",
+	  text: `Bienvenue ${user.firstname} ${user.lastname},\n\nMerci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : http://votreapp.com/verify/${user.id}`,
+	  html: `<p>Bienvenue ${user.firstname} ${user.lastname},</p><p>Merci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : <a href="http://votreapp.com/verify/${user.id}">Vérifier mon compte</a></p>`
+	});
+  
+	console.log("Message sent: %s", info.messageId);
+  }
+  
