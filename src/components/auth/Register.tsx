@@ -1,6 +1,10 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
+import { Link } from 'react-router-dom';
+
+/* Faire layout de register et login */
+/* Ouverture de la navbar : bug du menu qui ne se ferme pas */
 
 const BasicForm = () => (
   <div className="min-h-screen flex flex-col justify-center sm:py-12">
@@ -97,25 +101,27 @@ const BasicForm = () => (
               </button>
             </div>
             <div className="text-center sm:text-right whitespace-nowrap">
-              <button
-              type="button"
-              className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor" 
-                  className="w-4 h-4 inline-block align-text-bottom">
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth="2"
-                    d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
-                    />
-                </svg>
-                <span className='inline-block inline-block ml-1'>Déjà inscrit ? Je me connecte</span>
-              </button>
+              <Link to="/login">
+                <button
+                type="button"
+                className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor" 
+                    className="w-4 h-4 inline-block align-text-bottom">
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth="2"
+                      d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                      />
+                  </svg>
+                  <span className='inline-block inline-block ml-1'>Déjà inscrit ? Je me connecte</span>
+                </button>
+              </Link>
             </div>
           </div>
         </div>
