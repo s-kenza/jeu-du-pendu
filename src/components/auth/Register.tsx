@@ -4,7 +4,6 @@ import CustomInputComponent from '../InputComponent';
 import { Link } from 'react-router-dom';
 
 /* Faire layout de register et login */
-/* Ouverture de la navbar : bug du menu qui ne se ferme pas */
 
 const BasicForm = () => (
   <div className="min-h-screen flex flex-col justify-center sm:py-12">
