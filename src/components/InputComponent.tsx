@@ -1,6 +1,6 @@
 const CustomInputComponent = ({ field, form: { touched, errors }, label, type = 'text', ...props }) => (
   <div className="mb-5">
-    <label className="font-semibold text-sm text-gray-600 pb-1 block" htmlFor={props.id || props.name}>
+    <label className="font-semibold text-sm pb-1 block" htmlFor={props.id || props.name}>
       {label}
     </label>
     <input

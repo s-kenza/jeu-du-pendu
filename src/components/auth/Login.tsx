@@ -1,8 +1,44 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-const BasicForm = () => (
+const BasicForm = () => {
+
+  const navigate = useNavigate();
+  
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleSubmit = async (values: any, { setSubmitting, setErrors }) => {
+    try {
+      const response = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+      const data = await response.json();
+      console.log(data);
+      if (response.ok) {
+        console.log("Connecté : ", data);
+        const token = data.token;
+        localStorage.setItem('authToken', token);
+        navigate('/', { state: { message: 'Vous êtes connecté' } });
+        setErrorMessage('');
+      } else {
+        setErrorMessage(data.error || 'Une erreur est survenue');
+      }
+    } catch (error) {
+      console.error("Erreur lors de la connexion :", error);
+      setErrorMessage('Erreur réseau. Veuillez réessayer plus tard.');
+    } finally {
+      setSubmitting(false);
+    };
+  }
+
+  return (
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
         <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>  
@@ -25,7 +61,11 @@ const BasicForm = () => (
                 <Field name="email" label="E-mail" component={CustomInputComponent} />
                 <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 
-                <button type="submit" disabled={isSubmitting} className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block">
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting} 
+                  className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
+                  onClick={() => handleSubmit}>
                   <span className="inline-block mr-2">Je me connecte</span>
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 inline-block">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -41,7 +81,7 @@ const BasicForm = () => (
                     <div className="text-center sm:text-left whitespace-nowrap">
                       <button
                         type="button"
-                        className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                        className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -63,7 +103,7 @@ const BasicForm = () => (
                     <div className="text-center sm:text-right whitespace-nowrap">
                       <button
                         type="button"
-                        className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg text-gray-500 hover:bg-gray-100 focus:outline-none focus:bg-gray-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                        className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -82,11 +122,35 @@ const BasicForm = () => (
                         <span className="inline-block ml-1">Aide</span>
                       </button>
                     </div>
+                    <div className="text-center sm:text-right whitespace-nowrap">
+                      <Link to="/login">
+                        <button
+                          type="button"
+                          className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor" 
+                            className="w-4 h-4 inline-block align-text-bottom">
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth="2"
+                              d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                            />
+                          </svg>
+                          <span className='inline-block ml-1'>Pas de compte ? Je m'inscris</span>
+                        </button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
             </div>
         </div>
      </div>
-  );
+  )
+};
 
 export default BasicForm;

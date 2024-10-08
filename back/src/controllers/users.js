@@ -1,6 +1,7 @@
 import User from "../models/users.js";
 import { Op } from "sequelize";
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -70,8 +71,12 @@ export async function registerUser(userDatas, bcrypt) {
 	let id = await generateID(
 		(lastname.substring(0, 3) + firstname.substring(0, 3)).toUpperCase()
 	);
+	//vérification que l'identifiant n'est pas déjà utilisé
 	//hashage du mot de passe
 	const hashedPassword = await bcrypt.hash(password);
+	//génération du token de vérification
+	const generateToken = crypto.randomBytes(32).toString('hex');
+
 	//création de l'utilisateur dans la base de données
 	const user = {
 		id,
@@ -80,6 +85,7 @@ export async function registerUser(userDatas, bcrypt) {
 		username,
 		email,
 		password: hashedPassword,
+		verifiedtoken: generateToken,
 	};
 
 	const newUser = await User.create(user);
@@ -148,10 +154,26 @@ async function sendVerificationEmail(user) {
 	  from: '"Votre Application" <noreply@votreapp.com>',
 	  to: user.email,
 	  subject: "Vérification de votre compte",
-	  text: `Bienvenue ${user.firstname} ${user.lastname},\n\nMerci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : http://votreapp.com/verify/${user.id}`,
-	  html: `<p>Bienvenue ${user.firstname} ${user.lastname},</p><p>Merci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : <a href="http://votreapp.com/verify/${user.id}">Vérifier mon compte</a></p>`
+	  text: `Bienvenue ${user.firstname} ${user.lastname},\n\nMerci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : http://localhost:5173/verify/${user.verifiedtoken}`,
+	  html: `<p>Bienvenue ${user.firstname} ${user.lastname},</p><p>Merci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : <a href="http://localhost:5173/verify/${user.verifiedtoken}">Vérifier mon compte</a></p>`
 	});
   
 	console.log("Message sent: %s", info.messageId);
   }
-  
+// Route pour vérifier le compte
+export async function verifyUser(token) {
+	const user = await User.findOne({
+		where: {
+			verifiedtoken: {
+				[Op.eq]: token,
+			},
+		},
+	});
+	if (!user) {
+		return { error: "Une erreur est survenue. Demander un nouvel email de confirmation.", code: 400 };
+	}
+	user.verified = true;
+	user.verifiedtoken = null;
+	await user.save();
+	return user;
+}

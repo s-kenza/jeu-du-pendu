@@ -5,6 +5,7 @@ import './index.css';
 import AuthLayout from './components/auth/AuthLayout';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login';
+import VerifyEmail from './components/auth/VerifyEmail';
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
         path: 'login',
         element: <Login />,
       },
+      {
+        path: '/verify/:token',
+        element: <VerifyEmail />
+      }
     ],
   },
 ]);

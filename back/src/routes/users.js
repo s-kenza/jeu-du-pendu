@@ -3,10 +3,16 @@ import {
 	getUsers,
 	loginUser,
 	registerUser,
+	verifyUser,
 } from "../controllers/users.js";
 export function usersRoutes(app) {
 	app.post("/login", async (request, reply) => {
-		reply.send(await loginUser(request.body, app));
+		const response = await loginUser(request.body, app);
+		if (response.error) {
+			reply.status(response.code).send(response);
+		} else {
+			reply.send(response);
+		}
 	}).post(
 		"/logout",
 		{ preHandler: [app.authenticate] },
@@ -21,7 +27,12 @@ export function usersRoutes(app) {
 	);
 	//inscription
 	app.post("/register", async (request, reply) => {
-		reply.send(await registerUser(request.body, app.bcrypt));
+		const response = await registerUser(request.body, app.bcrypt);
+		if (response.error) {
+			reply.status(response.code).send(response);
+		} else {
+			reply.send(response);
+		}
 	});
 	//récupération de la liste des utilisateurs
 	app.get("/users", async (request, reply) => {
@@ -30,5 +41,15 @@ export function usersRoutes(app) {
 	//récupération d'un utilisateur par son id
 	app.get("/users/:id", async (request, reply) => {
 		reply.send(await getUserById(request.params.id));
+	});
+
+	// Vérification de l'email de l'utilisateur via le token
+	app.get("/verify/:token", async (request, reply) => {
+		const response = await verifyUser(request.params.token);
+		if (response.error) {
+			reply.status(response.code).send(response);
+		} else {
+			reply.send(response);
+		}
 	});
 }
