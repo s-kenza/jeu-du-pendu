@@ -95,7 +95,6 @@ export async function registerUser(userDatas, bcrypt) {
 		await sendVerificationEmail(newUser);
 		} catch (error) {
 		console.error("Erreur lors de l'envoi de l'email de vérification:", error);
-		// Vous pouvez choisir de gérer cette erreur comme vous le souhaitez
 		}
 	}
 

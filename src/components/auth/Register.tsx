@@ -1,7 +1,7 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
 
@@ -9,6 +9,9 @@ const BasicForm = () => {
 
   const [errorMessage, setErrorMessage] = useState('');
   const [error, setError] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const navigate = useNavigate();
 
   /* Fonction pour soumettre les données à l'API */
   const handleSubmit = async (values, { setSubmitting, setErrors }) => {
@@ -21,19 +24,20 @@ const BasicForm = () => {
         body: JSON.stringify(values),
       });
       const data = await response.json();
-      console.log(data);
       if (response.ok) {
         console.log("Inscription réussie : ", data);
         setErrorMessage('');
+        navigate('/login', { state: { message: 'Inscription réussie. Veuillez vérifier votre email.' } });
       } else {
         setError(true);
-        console.log(data);
         setErrorMessage(data.error || 'Une erreur est survenue');
+        setLoading(false);
       }
     } catch (error) {
       console.error("Erreur lors de l'inscription :", error);
       setError(true);
       setErrorMessage('Erreur réseau. Veuillez réessayer plus tard.');
+      setLoading(false);
     } finally {
       setSubmitting(false);
     }
@@ -49,21 +53,22 @@ const BasicForm = () => {
   return (
     <>
     <dialog id="error_modal" className="modal modal-bottom sm:modal-middle">
-        <div className="modal-box">
-          <div role="alert" className="alert alert-error">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
-            </svg>
-            <span>Oups ! Il semblerait qu'il y ait un problème</span>
-          </div>
-          <p className="py-4">{errorMessage}</p>
-          <div className="modal-action">
-            <form method="dialog">
-              <button className="btn" onClick={() => setError(false)}>Fermer</button>
-            </form>
-          </div>
+      <div className="modal-box">
+        <div role="alert" className="alert alert-error">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span>Oups! Il semblerait qu'il y ait un problème</span>
         </div>
-      </dialog>
+        <p className="py-4">{errorMessage}</p>
+        <div className="modal-action">
+          <form method="dialog">
+            <button className="btn" onClick={() => setError(false)}>Fermer</button>
+          </form>
+        </div>
+      </div>
+    </dialog>
+
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
         <h1 className="font-bold text-center text-2xl mb-5">Inscription au jeu</h1>
@@ -100,13 +105,17 @@ const BasicForm = () => {
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={loading || isSubmitting}
                   className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
                 >
                   <span className="inline-block mr-2">Je m'inscris</span>
+                  {loading ?
+                  <span className="loading loading-ring loading-sm align-middle"></span>
+                  :
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 inline-block">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
+                  } 
                 </button>
               </Form>
             )}
