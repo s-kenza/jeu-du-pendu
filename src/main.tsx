@@ -6,6 +6,7 @@ import AuthLayout from './components/auth/AuthLayout';
 import Register from './components/auth/Register';
 import Login from './components/auth/Login';
 import VerifyEmail from './components/auth/VerifyEmail';
+import Game from './components/game/Game';
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
       {
         path: 'login',
         element: <Login />,
+      },
+      {
+        path: 'game',
+        element: <Game />,
       },
       {
         path: '/verify/:token',

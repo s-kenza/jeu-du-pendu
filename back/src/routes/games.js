@@ -1,10 +1,11 @@
-import { createGame, updateGame } from "../controllers/games.js";
+import { createGame, updateGame, getGames } from "../controllers/games.js";
 export function gamesRoutes(app) {
 	//création d'un jeu
 	app.post(
 		"/game",
 		{ preHandler: [app.authenticate] },
 		async (request, reply) => {
+			console.log("Requête reçue:", request.body);
 			reply.send(await createGame(request.body.userId));
 		}
 	);
@@ -16,4 +17,9 @@ export function gamesRoutes(app) {
 			reply.send(await updateGame(request));
 		}
 	);
+	app.get("/game", 
+		{ preHandler: [app.authenticate] },
+		async (request, reply) => {
+		reply.send(await getGames());
+	});
 }

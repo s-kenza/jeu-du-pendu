@@ -54,7 +54,7 @@ const Navbar = () => {
             <div className="flex-none">
                 <ul className="menu menu-horizontal px-1">
                     <button onClick={toggleTheme} className="mr-4">
-                        {theme === 'light' ? '🌞' : '🌙'}
+                        {theme === 'light' ? '🌙' : '🌞'}
                     </button>
                     <li>
                         <Link to="/">

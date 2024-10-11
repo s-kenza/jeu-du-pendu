@@ -11,6 +11,8 @@ import { usersRoutes } from "./routes/users.js";
 import { gamesRoutes } from "./routes/games.js";
 //bdd
 import { sequelize } from "./bdd.js";
+//socket.io
+import socketioServer from 'fastify-socket.io';
 
 //Test de la connexion
 try {
@@ -33,6 +35,11 @@ await app
 	})
 	.register(cors, {
 		origin: "*",
+	})
+	.register(socketioServer, {
+		cors: {
+			origin: "*",
+		},
 	})
 	.register(fastifySwagger, {
 		openapi: {
@@ -94,6 +101,49 @@ app.decorate("authenticate", async (request, reply) => {
 		reply.send(err);
 	}
 });
+const rooms = new Map();
+
+app.io.on('connection', (socket) => {
+	console.log(`Joueur connecté: ${socket.id}`);
+
+	// Front
+	socket.emit('message', 'Vous êtes connecté');
+
+	socket.on('joinRoom', (roomId) => {
+		if (!rooms.has(roomId)) {
+			rooms.set(roomId, [socket.id]);
+			socket.join(roomId);
+			socket.emit('roomJoined', { roomId, playerNumber: 1 });
+		} else if (rooms.get(roomId).length < 2) {
+			rooms.get(roomId).push(socket.id);
+			socket.join(roomId);
+			socket.emit('roomJoined', { roomId, playerNumber: 2 });
+			app.io.to(roomId).emit('gameStart');
+		} else {
+			socket.emit('roomFull');
+		}
+	});
+
+	socket.on('gameAction', (data) => {
+		const { roomId, action } = data;
+		socket.to(roomId).emit('opponentAction', action);
+	});
+
+	socket.on('disconnect', () => {
+		rooms.forEach((players, roomId) => {
+		  const index = players.indexOf(socket.id);
+		  if (index !== -1) {
+			players.splice(index, 1);
+			if (players.length === 0) {
+			  rooms.delete(roomId);
+			} else {
+			  app.io.to(roomId).emit('playerLeft');
+			}
+		  }
+		});
+	});
+});
+// app.io.to('room').emit('message', 'coucou');
 //gestion utilisateur
 usersRoutes(app);
 //gestion des jeux

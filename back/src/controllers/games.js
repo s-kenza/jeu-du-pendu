@@ -1,5 +1,9 @@
 import Game from "../models/games.js";
 
+export async function getGames() {
+	return await Game.findAll();
+}
+
 export async function createGame(userId) {
 	if (!userId) {
 		return { error: "L'identifiant du joueur est manquant" };
