@@ -98,8 +98,8 @@ const Game = () => {
             <ul>
               {games.map(game => (
                 <li key={game.id}>
-                  Partie {game.id} - Créée par {game.creator}
-                  <button onClick={() => joinGame(game.id)}>Rejoindre</button>
+                  Partie {game.id} - Créée par {game.creator} -
+                  <button onClick={() => joinGame(game.id)}> - Rejoindre</button>
                 </li>
               ))}
             </ul>
