@@ -134,6 +134,13 @@ app.io.on("connection", (socket) => {
 		}
 	});
 
+	socket.on('chooseStartingPlayer', ({ roomId }) => {
+		console.log('Received chooseStartingPlayer event for room', roomId);
+		const startingPlayer = Math.random() < 0.5 ? 1 : 2;
+		app.io.to(roomId).emit('startingPlayerChosen', startingPlayer);
+		console.log(`Joueur ${startingPlayer} commence.`);
+	});
+
 	// Gestion de la déconnexion
 	socket.on("disconnect", () => {
 		console.log(`Joueur déconnecté : ${socket.id}`);

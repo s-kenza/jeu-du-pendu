@@ -9,6 +9,7 @@ const Game = () => {
   const [playerNumber, setPlayerNumber] = useState(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [userId, setUserId] = useState(''); // Assurez-vous d'avoir l'ID de l'utilisateur connecté
+  const [startingPlayer, setStartingPlayer] = useState(null);
 
   useEffect(() => {
     const newSocket = io("http://localhost:3000");
@@ -18,11 +19,26 @@ const Game = () => {
 
     newSocket.on('roomJoined', ({ roomId, playerNumber }) => {
       setRoomId(roomId);
+      console.log('Received roomJoined event', roomId, playerNumber);
       setPlayerNumber(playerNumber);
     });
 
     newSocket.on('gameStart', () => {
+      console.log('Received gameStart event');
       setIsGameStarted(true);
+      // Attendre quelques secondes avant de choisir le joueur qui commence
+      setTimeout(() => {
+        if(roomId) {
+          chooseStartingPlayer(roomId);
+        } else {
+          console.log('Room ID is not set yet');
+        }
+      }, 3000); // 3 secondes de délai
+    });
+
+    newSocket.on('startingPlayerChosen', (player) => {
+      console.log('Received startingPlayerChosen event', player);
+      setStartingPlayer(player);
     });
 
     newSocket.on('roomFull', () => {
@@ -36,6 +52,7 @@ const Game = () => {
       newSocket.off('gameStart');
     };
   }, []);
+  // }, [roomId, isGameStarted]);
 
   const fetchGames = async () => {
     try {
@@ -80,6 +97,13 @@ const Game = () => {
     socket.emit('joinRoom', gameId);
   };
 
+  // Fonction qui choisit au hasard entre les deux joueurs qui commence
+  const chooseStartingPlayer = (roomId: string) => {
+    console.log(roomId);
+    console.log('Emitting chooseStartingPlayer event');
+    socket.emit('chooseStartingPlayer', { roomId });
+  };
+
   // const makeMove = (action) => {
   //   socket.emit('gameAction', { roomId, action });
   //   // Mettre à jour l'état du jeu localement
@@ -114,6 +138,9 @@ const Game = () => {
       {isGameStarted && (
         <div className="card">
           <h2>Vous êtes le joueur {playerNumber}</h2>
+          {startingPlayer && (
+            <p>{startingPlayer} commence</p>
+          )}
           {/* Interface de jeu */}
         </div>
       )}
