@@ -1,11 +1,13 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "./context/AuthContext";
 
 const Navbar = () => {
     const [open, setOpen] = useState(false); // Gère l'état d'ouverture du menu
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const location = useLocation(); // Récupère l'URL actuelle pour surveiller les changements de navigation
     const navigate = useNavigate(); // Permet de naviguer via React Router
+    const { isAuthenticated, logout } = useAuth();
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -34,17 +36,17 @@ const Navbar = () => {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         // Redirige vers la page d'accueil ou de connexion
-        navigate('/login'); // ou navigate('/') pour rediriger vers la page d'accueil
+        navigate('/');
+        // Déconnecte l'utilisateur
+        logout();
     };
 
     useEffect(() => {
         // Ferme le menu lorsque la page change (lors de la navigation)
         setOpen(false);
-    }, [location.pathname]);
-
-    useEffect(() => {
+        console.log("Navbar:", isAuthenticated)
         document.documentElement.setAttribute('data-theme', theme);
-    }, [theme]);
+    }, [location.pathname, theme]);
 
     return (
         <div className="navbar bg-base-200">
@@ -63,32 +65,45 @@ const Navbar = () => {
                           </button>
                         </Link>
                     </li>
-                    <li>
-                        <details open={open} onToggle={handleToggle}>
-                            <summary>Mon compte</summary>
-                            <ul className="bg-base-100 rounded-t-none p-2">
-                                <li>
-                                    <button 
-                                        className="mr-4" 
-                                        onClick={() => handleLinkClick('/login')}>
-                                        Connexion
-                                    </button>
-                                </li>
-                                <li>
-                                    <button 
-                                        onClick={() => handleLinkClick('/register')}>
-                                        Inscription
-                                    </button>
-                                </li>
-                                <li>
-                                  <button 
-                                      onClick={handleLogout}>
-                                      Déconnexion
-                                  </button>
-                                </li>
-                            </ul>
-                        </details>
-                    </li>
+                    {isAuthenticated ? (
+                        <>
+                            <li>
+                                <details open={open} onToggle={handleToggle}>
+                                    <summary>Mon profil</summary>
+                                    <ul className="bg-base-100 rounded-t-none p-2">
+                                        <li>
+                                            <button>
+                                                Paramètres
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button 
+                                                onClick={handleLogout}>
+                                                Déconnexion
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </details>
+                            </li>
+                        </>
+                    ) : (
+                        <>
+                            <li>
+                                <Link to="/login">
+                                <button>
+                                    Connexion
+                                </button>
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/register">
+                                <button>
+                                    Inscription
+                                </button>
+                                </Link>
+                            </li>
+                        </>
+                    )}
                 </ul>
             </div>
         </div>

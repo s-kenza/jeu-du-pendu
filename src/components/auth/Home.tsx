@@ -2,22 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import Footer from '../Footer';
 import Navbar from '../Navbar';
+import { useAuth } from '../context/AuthContext';
 import { SocketProvider } from '../socket/SocketContext';
 
 const Layout: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
   const message = location.state?.message;
   const isHomePage = location.pathname === '/';
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token); // Définit isAuthenticated sur true si le token est présent
-  }, [message]);
+    console.log("Authentifié:", isAuthenticated);
+  }, []);
 
   return (
-    <SocketProvider>
+    <>
       <div className="min-h-screen flex flex-col">
         <Navbar />
 
@@ -30,11 +31,19 @@ const Layout: React.FC = () => {
                   Bienvenue dans le jeu du pendu ! Testez vos compétences en devinant les mots choisis par le système. 
                   Amusez-vous tout en apprenant de nouveaux mots !
                 </p>
-                <Link to="/login">
-                  <button className="btn btn-primary text-white bg-blue-600 hover:bg-blue-700 transition duration-300">
-                    Commencer le Jeu
-                  </button>
-                </Link>
+                { isAuthenticated ? (
+                  <Link to="/game">
+                    <button className="btn btn-primary text-white bg-blue-600 hover:bg-blue-700 transition duration-300">
+                      Jouer
+                      </button>
+                      </Link>
+                      ) : (    
+                  <Link to="/login">
+                    <button className="btn btn-primary text-white bg-blue-600 hover:bg-blue-700 transition duration-300">
+                      Commencer le Jeu
+                    </button>
+                  </Link>
+                  )}
               </div>
             )
           ) : (
@@ -44,7 +53,7 @@ const Layout: React.FC = () => {
 
         <Footer />
       </div>
-    </SocketProvider>
+    </>
   );
 };
 

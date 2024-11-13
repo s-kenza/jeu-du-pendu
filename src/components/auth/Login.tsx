@@ -1,14 +1,16 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const BasicForm = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState('');
+  const { login } = useAuth();
 
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values: any, { setSubmitting, setErrors }) => {
     try {
       const response = await fetch('http://localhost:3000/login', {
         method: 'POST',
@@ -20,11 +22,13 @@ const BasicForm = () => {
       const data = await response.json();
       console.log(data);
       if (response.ok) {
+
         console.log("Connecté : ", data);
         const token = data.token;
-        localStorage.setItem('authToken', token);
+        login(token);
         navigate('/game', { state: { message: 'Vous êtes connecté' } });
         setErrorMessage('');
+
       } else {
         setErrorMessage(data.error || 'Une erreur est survenue');
       }

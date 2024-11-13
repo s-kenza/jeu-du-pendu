@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { io } from "socket.io-client";
+import { useContext, useEffect, useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { io } from 'socket.io-client';
 
 const Game = () => {
-  const [socket, setSocket] = useState(null);
+  const [socket, setSocket] = useState<any>(null);
   const [games, setGames] = useState([]);
   const [roomId, setRoomId] = useState(null);
   const [playerNumber, setPlayerNumber] = useState(null);
@@ -24,19 +25,15 @@ const Game = () => {
       setIsGameStarted(true);
     });
 
-    newSocket.on('opponentAction', (action) => {
-      // Gérer l'action de l'adversaire
-    });
-
-    newSocket.on('playerLeft', () => {
-      setIsGameStarted(false);
-      // Gérer la déconnexion de l'adversaire
+    newSocket.on('roomFull', () => {
+      console.log("La partie est pleine");
     });
 
     fetchGames();
 
     return () => {
-      newSocket.disconnect();
+      newSocket.off('roomJoined');
+      newSocket.off('gameStart');
     };
   }, []);
 
@@ -50,13 +47,14 @@ const Game = () => {
         },
       });
       const data = await response.json();
-      setGames(data.filter(game => game.state === 'pending'));
+      setGames(data.filter((game: any) => game.state === 'pending'));
       console.log("Parties récupérées:", data);
     } catch (error) {
       console.error("Erreur lors de la récupération des parties:", error);
     }
   };
 
+  // Créer une nouvelle partie
   const createGame = async () => {
     const token = localStorage.getItem('authToken');
     try {
@@ -75,42 +73,47 @@ const Game = () => {
     } catch (error) {
       console.error("Erreur lors de la création de la partie:", error);
     }
-  };
+  };  
 
-  const joinGame = (gameId) => {
+  const joinGame = (gameId: any) => {
     setRoomId(gameId);
     socket.emit('joinRoom', gameId);
   };
 
-  const makeMove = (action) => {
-    socket.emit('gameAction', { roomId, action });
-    // Mettre à jour l'état du jeu localement
-  };
+  // const makeMove = (action) => {
+  //   socket.emit('gameAction', { roomId, action });
+  //   // Mettre à jour l'état du jeu localement
+  // };
 
   return (
     <div>
       {!roomId && (
-        <div>
+        <div className="card">
           <h2>Parties disponibles</h2>
           {games.length === 0 ? (
             <p>Aucune partie n'est disponible. Vous pouvez en créer une.</p>
           ) : (
             <ul>
-              {games.map(game => (
-                <li key={game.id}>
-                  Partie {game.id} - Créée par {game.creator}
-                  <button onClick={() => joinGame(game.id)}>Rejoindre</button>
+              {games.map((game: any) => (
+                <li className="card game" key={game.id}>
+                  <p className="description">Partie {game.id}</p> 
+                  <p className="by">Créée par {game.creator}</p>
+                  <button className="join" onClick={() => joinGame(game.id)}>Rejoindre</button>
                 </li>
               ))}
             </ul>
           )}
-          <button onClick={createGame}>Créer une partie</button>
+          <button className="create" onClick={createGame}>Créer une partie</button>
         </div>
       )}
-      {roomId && !isGameStarted && <p>En attente d'un adversaire...</p>}
+      {roomId && !isGameStarted && 
+      <div className="card">
+        <h2>En attente d'un adversaire...</h2>
+      </div>
+      }
       {isGameStarted && (
-        <div>
-          <p>Vous êtes le joueur {playerNumber}</p>
+        <div className="card">
+          <h2>Vous êtes le joueur {playerNumber}</h2>
           {/* Interface de jeu */}
         </div>
       )}

@@ -9,6 +9,10 @@ import fastifyJWT from "@fastify/jwt";
 //routes
 import { usersRoutes } from "./routes/users.js";
 import { gamesRoutes } from "./routes/games.js";
+import { wordsRoutes } from "./routes/words.js";
+import Word from "./models/words.js";
+import Game from "./models/games.js";
+import { seedWords } from "./seed.js";
 //bdd
 import { sequelize } from "./bdd.js";
 //socket.io
@@ -103,51 +107,55 @@ app.decorate("authenticate", async (request, reply) => {
 });
 const rooms = new Map();
 
-app.io.on('connection', (socket) => {
-	console.log(`Joueur connecté: ${socket.id}`);
+// Traiter la connexion
 
-	// Front
-	socket.emit('message', 'Vous êtes connecté');
+app.io.on("connection", (socket) => {
+	console.log(`Joueur connecté : ${socket.id}`);
 
+	// Gestion de la création de salle
 	socket.on('joinRoom', (roomId) => {
 		if (!rooms.has(roomId)) {
+			// La room est créée avec un seul joueur
 			rooms.set(roomId, [socket.id]);
 			socket.join(roomId);
 			socket.emit('roomJoined', { roomId, playerNumber: 1 });
 		} else if (rooms.get(roomId).length < 2) {
+			// Un deuxième joueur rejoint la room
 			rooms.get(roomId).push(socket.id);
 			socket.join(roomId);
+	
+			// Envoyer à chaque joueur l'événement 'roomJoined' avec son numéro de joueur
 			socket.emit('roomJoined', { roomId, playerNumber: 2 });
+	
+			// Émettre 'gameStart' à tous les joueurs dans cette room
 			app.io.to(roomId).emit('gameStart');
 		} else {
-			socket.emit('roomFull');
+			socket.emit('roomFull', roomId);
 		}
 	});
 
-	socket.on('gameAction', (data) => {
-		const { roomId, action } = data;
-		socket.to(roomId).emit('opponentAction', action);
-	});
-
-	socket.on('disconnect', () => {
-		rooms.forEach((players, roomId) => {
-		  const index = players.indexOf(socket.id);
-		  if (index !== -1) {
-			players.splice(index, 1);
-			if (players.length === 0) {
-			  rooms.delete(roomId);
-			} else {
-			  app.io.to(roomId).emit('playerLeft');
-			}
-		  }
-		});
+	// Gestion de la déconnexion
+	socket.on("disconnect", () => {
+		console.log(`Joueur déconnecté : ${socket.id}`);
 	});
 });
-// app.io.to('room').emit('message', 'coucou');
+
 //gestion utilisateur
 usersRoutes(app);
 //gestion des jeux
 gamesRoutes(app);
+//gestion des mots
+wordsRoutes(app);
+
+async function ensureWordsTableFilled() {
+	const wordCount = await Word.count();
+	if (wordCount === 0) {
+	  console.log("La table des mots est vide. Remplissage en cours...");
+	  await seedWords();
+	} else {
+	  console.log(`La table des mots contient déjà ${wordCount} mots.`);
+	}
+  }
 
 /**********
  * START
@@ -166,6 +174,7 @@ const start = async () => {
 				);
 			});
 		await app.listen({ port: 3000 });
+		await ensureWordsTableFilled();
 		console.log(
 			"Serveur Fastify lancé sur " + chalk.blue("http://localhost:3000")
 		);
