@@ -12,6 +12,7 @@ const BasicForm = () => {
 
   const handleSubmit = async (values: any, { setSubmitting, setErrors }) => {
     try {
+      // 1. Effectuer la requête de connexion avec l'email et le mot de passe
       const response = await fetch('http://localhost:3000/login', {
         method: 'POST',
         headers: {
@@ -21,14 +22,38 @@ const BasicForm = () => {
       });
       const data = await response.json();
       console.log(data);
-      if (response.ok) {
-
-        console.log("Connecté : ", data);
+  
+      if (response.ok && data.token) {
+        // 2. Si la connexion est réussie, obtenir le token
         const token = data.token;
-        login(token);
-        navigate('/game', { state: { message: 'Vous êtes connecté' } });
-        setErrorMessage('');
-
+        
+        // 3. Vérifier les utilisateurs via la route GET /users
+        const userResponse = await fetch('http://localhost:3000/users', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Passer le token pour vérifier l'utilisateur
+          },
+        });
+        const usersData = await userResponse.json();
+        
+        if (userResponse.ok) {
+          // 4. Chercher l'utilisateur en utilisant l'email et le mot de passe
+          const currentUser = usersData.find((user: any) => 
+            user.email === values.email
+        );
+        
+        console.log(currentUser)
+        
+        if (currentUser) {
+            // 5. Stocker l'`userId` dans le localStorage
+            login(token, currentUser.id);  // Connecter l'utilisateur avec le token
+            navigate('/game', { state: { message: 'Vous êtes connecté' } });
+          } else {
+            setErrorMessage('Utilisateur ou mot de passe incorrect');
+          }
+        } else {
+          setErrorMessage('Impossible de récupérer les utilisateurs.');
+        }
       } else {
         setErrorMessage(data.error || 'Une erreur est survenue');
       }

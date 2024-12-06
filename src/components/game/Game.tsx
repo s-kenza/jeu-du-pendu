@@ -6,53 +6,58 @@ const Game = () => {
   const [socket, setSocket] = useState<any>(null);
   const [games, setGames] = useState([]);
   const [roomId, setRoomId] = useState(null);
-  const [playerNumber, setPlayerNumber] = useState(null);
+  const [playerId, setPlayerId] = useState<string | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
-  const [userId, setUserId] = useState(''); // Assurez-vous d'avoir l'ID de l'utilisateur connecté
-  const [startingPlayer, setStartingPlayer] = useState(null);
+  const { userId } = useAuth();
+  const [isChoosing, setIsChoosing] = useState(false);
+  const [startingPlayer, setStartingPlayer] = useState<string | null>(null);
+  const [randomWord, setRandomWord] = useState<string | null>(null); 
+  const [displayWord, setDisplayWord] = useState<string>("");
+  const [message, setMessage] = useState<string | null>(null); // Message à afficher
+  const [letter, setLetter] = useState<string>(""); // Lettre entrée par le joueur
 
   useEffect(() => {
-    const newSocket = io("http://localhost:3000");
+    if (!userId) return;
+
+    const newSocket: any = io("http://localhost:3000");
     setSocket(newSocket);
 
-    setUserId('SMIALI');
+    newSocket.emit('register', userId);
 
-    newSocket.on('roomJoined', ({ roomId, playerNumber }) => {
+    if (roomId !== null) {
+      console.log("UserId avant joinRoom:", userId);
+      newSocket.emit('joinRoom', { roomId, userId });
+    }
+
+    newSocket.on('roomJoined', ({ roomId, userId }) => {
+      console.log(`Rejoint la room ${roomId} en tant que joueur ${userId}`);
       setRoomId(roomId);
-      console.log('Received roomJoined event', roomId, playerNumber);
-      setPlayerNumber(playerNumber);
+      setPlayerId(userId);
     });
 
-    newSocket.on('gameStart', () => {
-      console.log('Received gameStart event');
+    newSocket.on('startingPlayer', (startingPlayer: any) => {
+      console.log(`Le joueur qui commence est : ${startingPlayer}`);
+      setStartingPlayer(startingPlayer);
+      setIsChoosing(false); // Arrêter l'animation
+    });
+
+    newSocket.on('gameStart', ({ roomId }) => {
+      console.log(`La partie a commencé dans la room ${roomId}`);
       setIsGameStarted(true);
-      // Attendre quelques secondes avant de choisir le joueur qui commence
-      setTimeout(() => {
-        if(roomId) {
-          chooseStartingPlayer(roomId);
-        } else {
-          console.log('Room ID is not set yet');
-        }
-      }, 3000); // 3 secondes de délai
     });
 
-    newSocket.on('startingPlayerChosen', (player) => {
-      console.log('Received startingPlayerChosen event', player);
-      setStartingPlayer(player);
-    });
-
-    newSocket.on('roomFull', () => {
-      console.log("La partie est pleine");
+    newSocket.on('gameStarted', ({ word }) => {
+      setRandomWord(word);
+      setDisplayWord('_ '.repeat(word.length)); // Afficher les underscores
+      setIsGameStarted(true);
     });
 
     fetchGames();
 
     return () => {
-      newSocket.off('roomJoined');
-      newSocket.off('gameStart');
+      newSocket.disconnect();
     };
-  }, []);
-  // }, [roomId, isGameStarted]);
+  }, [userId, roomId]);
 
   const fetchGames = async () => {
     try {
@@ -71,7 +76,6 @@ const Game = () => {
     }
   };
 
-  // Créer une nouvelle partie
   const createGame = async () => {
     const token = localStorage.getItem('authToken');
     try {
@@ -79,7 +83,7 @@ const Game = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ userId: userId }),
       });
@@ -90,24 +94,41 @@ const Game = () => {
     } catch (error) {
       console.error("Erreur lors de la création de la partie:", error);
     }
-  };  
+  };
 
-  const joinGame = (gameId: any) => {
+  const joinGame = (gameId: any, userId: string|null) => {
     setRoomId(gameId);
-    socket.emit('joinRoom', gameId);
+    setPlayerId(userId);
   };
 
-  // Fonction qui choisit au hasard entre les deux joueurs qui commence
-  const chooseStartingPlayer = (roomId: string) => {
-    console.log(roomId);
-    console.log('Emitting chooseStartingPlayer event');
-    socket.emit('chooseStartingPlayer', { roomId });
+  const chooseStartingPlayer = (players: string[]) => {
+    setIsChoosing(true);
+    setTimeout(() => {
+      const randomPlayer = players[Math.floor(Math.random() * players.length)];
+      setStartingPlayer(randomPlayer);
+      setIsChoosing(false);
+    }, 3000);
   };
 
-  // const makeMove = (action) => {
-  //   socket.emit('gameAction', { roomId, action });
-  //   // Mettre à jour l'état du jeu localement
-  // };
+  useEffect(() => {
+    if (startingPlayer) {
+      // Quand le joueur qui commence est défini, afficher le message
+      setMessage(`${startingPlayer}, c'est à toi de commencer ! Renseigne une lettre.`);
+    }
+  }, [startingPlayer]); // Lancer le jeu automatiquement dès qu'on connaît le joueur qui commence
+
+  const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLetter(event.target.value.toUpperCase()); // Enregistrer la lettre en majuscule
+  };
+
+  const submitLetter = () => {
+    if (letter) {
+      // Envoyer la lettre au serveur pour vérifier et mettre à jour le jeu
+      socket.emit('submitLetter', { roomId, playerId, letter });
+      console.log(`Lettre envoyée: ${letter}`);
+      setLetter(''); // Réinitialiser le champ de saisie
+    }
+  };
 
   return (
     <div>
@@ -120,9 +141,9 @@ const Game = () => {
             <ul>
               {games.map((game: any) => (
                 <li className="card game" key={game.id}>
-                  <p className="description">Partie {game.id}</p> 
+                  <p className="description">Partie {game.id}</p>
                   <p className="by">Créée par {game.creator}</p>
-                  <button className="join" onClick={() => joinGame(game.id)}>Rejoindre</button>
+                  <button className="join" onClick={() => joinGame(game.id, userId)}>Rejoindre</button>
                 </li>
               ))}
             </ul>
@@ -137,11 +158,31 @@ const Game = () => {
       }
       {isGameStarted && (
         <div className="card">
-          <h2>Vous êtes le joueur {playerNumber}</h2>
-          {startingPlayer && (
-            <p>{startingPlayer} commence</p>
+          <h2>Vous êtes le joueur {playerId}</h2>
+          {isChoosing ? (
+            <div className="flex justify-center items-center">
+              <span className="loading loading-ring loading-lg"></span>
+            </div>
+          ) : (
+            startingPlayer && (
+              <p>{startingPlayer} commence</p>
+            )
           )}
-          {/* Interface de jeu */}
+          {message && <p className="text-lg mt-2">{message}</p>}
+          <p className="text-2xl font-bold mt-4">{displayWord}</p>
+          {startingPlayer === playerId && (
+            <div>
+              <input 
+                type="text" 
+                value={letter} 
+                onChange={handleLetterInput} 
+                maxLength={1} 
+                placeholder="Entrez une lettre" 
+                className="input"
+              />
+              <button onClick={submitLetter} className="btn">Soumettre la lettre</button>
+            </div>
+          )}
         </div>
       )}
     </div>

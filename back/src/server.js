@@ -105,45 +105,87 @@ app.decorate("authenticate", async (request, reply) => {
 		reply.send(err);
 	}
 });
-const rooms = new Map();
+
+const activeUsers = new Map(); // Map userId -> socket.id
+const rooms = new Map(); // Stocke les rooms et leurs joueurs
 
 // Traiter la connexion
 
 app.io.on("connection", (socket) => {
 	console.log(`Joueur connecté : ${socket.id}`);
 
-	// Gestion de la création de salle
-	socket.on('joinRoom', (roomId) => {
+	socket.on('joinRoom', ({ roomId, userId }) => {
+		console.log('UserId côté serveur:', userId);
 		if (!rooms.has(roomId)) {
-			// La room est créée avec un seul joueur
-			rooms.set(roomId, [socket.id]);
-			socket.join(roomId);
-			socket.emit('roomJoined', { roomId, playerNumber: 1 });
-		} else if (rooms.get(roomId).length < 2) {
-			// Un deuxième joueur rejoint la room
-			rooms.get(roomId).push(socket.id);
-			socket.join(roomId);
+		  // Créer une nouvelle room
+		  rooms.set(roomId, []);
+		}
+
+		const players = rooms.get(roomId);
+
+		if (players.length >= 2) {
+			// Si la room est pleine, envoyer un événement au client
+			socket.emit('roomFull', { message: 'La partie est pleine.' });
+			return;
+		}
+
+		// Ajouter le joueur à la room
+		players.push({ socketId: socket.id, userId });
+		socket.join(roomId);
+		console.log(`User ${userId} a rejoint la room ${roomId}`);
 	
-			// Envoyer à chaque joueur l'événement 'roomJoined' avec son numéro de joueur
-			socket.emit('roomJoined', { roomId, playerNumber: 2 });
+		// Notifier le joueur qu'il a rejoint la room
+		socket.emit('roomJoined', { roomId, userId });
 	
-			// Émettre 'gameStart' à tous les joueurs dans cette room
-			app.io.to(roomId).emit('gameStart');
-		} else {
-			socket.emit('roomFull', roomId);
+		// Si 2 joueurs sont dans la room, démarrer la partie
+		if (players.length === 2) {
+			const startingPlayer = players[Math.floor(Math.random() * players.length)].userId;
+			app.io.to(roomId).emit('startingPlayer', startingPlayer);
+			app.io.to(roomId).emit('gameStart', { roomId });
+			console.log(`La partie commence dans la room ${roomId} avec ${startingPlayer} qui commence`);
 		}
 	});
 
-	socket.on('chooseStartingPlayer', ({ roomId }) => {
-		console.log('Received chooseStartingPlayer event for room', roomId);
-		const startingPlayer = Math.random() < 0.5 ? 1 : 2;
-		app.io.to(roomId).emit('startingPlayerChosen', startingPlayer);
-		console.log(`Joueur ${startingPlayer} commence.`);
+	socket.on('gameStartAction', ({ roomId, playerId, word }) => {
+		console.log(`Le jeu commence dans la room ${roomId} avec le mot ${word}`);
+		app.io.to(roomId).emit('gameStarted', { word });
 	});
 
-	// Gestion de la déconnexion
-	socket.on("disconnect", () => {
-		console.log(`Joueur déconnecté : ${socket.id}`);
+	// Écouter un événement de connexion de l'utilisateur avec son userId
+	socket.on('register', (userId) => {
+		console.log(`Utilisateur enregistré : ${userId}`);
+		
+		// Si l'utilisateur a un socket actif, déconnectez-le
+		if (activeUsers.has(userId)) {
+		  const oldSocketId = activeUsers.get(userId);
+		  const oldSocket = app.io.sockets.sockets.get(oldSocketId);
+		  if (oldSocket) {
+			oldSocket.disconnect(); // Déconnecte l'ancien socket
+		  }
+		}
+	
+		// Enregistrer le nouvel ID socket
+		activeUsers.set(userId, socket.id);
+	
+		// Gérer la déconnexion
+		socket.on('disconnect', () => {
+			console.log(`Client déconnecté : ${socket.id}`);
+
+		   	// Supprimer l'utilisateur de la liste des utilisateurs actifs
+			if (activeUsers.get(userId) === socket.id) {
+				activeUsers.delete(userId);
+			}
+
+			// Supprimer le socket déconnecté des rooms
+			rooms.forEach((players, roomId) => {
+				const updatedPlayers = players.filter(player => player.socketId !== socket.id);
+				if (updatedPlayers.length === 0) {
+					rooms.delete(roomId); // Supprimer la room si vide
+				} else {
+					rooms.set(roomId, updatedPlayers);
+				}
+			});
+		});
 	});
 });
 
