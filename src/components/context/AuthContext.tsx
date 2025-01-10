@@ -37,9 +37,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('authToken');
     const storedUserId = localStorage.getItem('userId');
-    setIsAuthenticated(!!token);
-    setUserId(storedUserId);
-  }, []);
+  
+    if (token && token.trim() !== "") {
+      setIsAuthenticated(true);
+      setUserId(storedUserId);
+    } else {
+      setIsAuthenticated(false);
+      setUserId(null);
+    }
+  }, []);  
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, userId, login, logout}}>

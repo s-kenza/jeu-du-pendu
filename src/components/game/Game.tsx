@@ -12,9 +12,10 @@ const Game = () => {
   const [isChoosing, setIsChoosing] = useState(false);
   const [startingPlayer, setStartingPlayer] = useState<string | null>(null);
   const [randomWord, setRandomWord] = useState<string | null>(null); 
-  const [displayWord, setDisplayWord] = useState<string>("");
   const [message, setMessage] = useState<string | null>(null); // Message à afficher
   const [letter, setLetter] = useState<string>(""); // Lettre entrée par le joueur
+  const [hiddenWord, setHiddenWord] = useState<string>("");
+  const [guessedLetters, setGuessedLetters] = useState<string[]>([]); // Liste des lettres déjà devinées
 
   useEffect(() => {
     if (!userId) return;
@@ -41,15 +42,59 @@ const Game = () => {
       setIsChoosing(false); // Arrêter l'animation
     });
 
-    newSocket.on('gameStart', ({ roomId }) => {
+    newSocket.on('gameStart', ({ roomId, word }) => {
       console.log(`La partie a commencé dans la room ${roomId}`);
+      console.log(`Le mot à deviner est : ${word}`);
       setIsGameStarted(true);
+      setRandomWord(word);
+      // Masquer les lettres du mot avec des underscores
+      setHiddenWord("_ ".repeat(word.length).trim())
     });
 
     newSocket.on('gameStarted', ({ word }) => {
       setRandomWord(word);
       setDisplayWord('_ '.repeat(word.length)); // Afficher les underscores
       setIsGameStarted(true);
+    });
+
+    newSocket.on('updateHiddenWord', ({ updatedWord, letter, playerId }) => {
+      setHiddenWord(updatedWord); // Mettre à jour le mot caché
+    });
+
+    newSocket.on('nextPlayer', (nextPlayerId) => {
+      // Vérifie si c'est le tour du joueur actuel
+      if (nextPlayerId === playerId) {
+        setMessage(`${playerId}, c'est à toi de jouer !`);
+      }
+    });
+
+    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord }) => {
+      setHiddenWord(updatedHiddenWord);
+      setStartingPlayer(playerId);
+    });
+
+    newSocket.on('gameWon', ({ winner, word }) => {
+      alert(`${winner} a gagné ! Le mot était : ${word}`);
+      // Mettre à jour l'état pour finir le jeu
+      setIsGameStarted(false);
+    });
+
+    newSocket.on('letterAlreadyGuessed', ({ letter }) => {
+      alert(`La lettre ${letter} a déjà été devinée.`);
+    });
+
+    newSocket.on('letterGuessed', ({ letter }) => {
+      // Ajouter la lettre à la liste des lettres déjà devinées seulement si elle n'y est pas déjà
+      setGuessedLetters((prevGuessedLetters) => {
+        if (!prevGuessedLetters.includes(letter)) {
+          return [...prevGuessedLetters, letter];
+        }
+        return prevGuessedLetters;
+      });
+    });
+
+    newSocket.on('gameEnded', () => {
+      window.location.href = '/game';  // Redirige vers la page d'accueil
     });
 
     fetchGames();
@@ -110,6 +155,17 @@ const Game = () => {
     }, 3000);
   };
 
+  // Afficher les lettres déjà jouées (barrées)
+  const renderGuessedLetters = () => {
+    return (
+      <div>
+        {guessedLetters.map((letter, idx) => (
+          <span key={idx} style={{ textDecoration: 'line-through' }}>{letter} </span>
+        ))}
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (startingPlayer) {
       // Quand le joueur qui commence est défini, afficher le message
@@ -122,12 +178,18 @@ const Game = () => {
   };
 
   const submitLetter = () => {
-    if (letter) {
-      // Envoyer la lettre au serveur pour vérifier et mettre à jour le jeu
-      socket.emit('submitLetter', { roomId, playerId, letter });
-      console.log(`Lettre envoyée: ${letter}`);
-      setLetter(''); // Réinitialiser le champ de saisie
+    if (guessedLetters.includes(letter)) {
+      alert(`La lettre ${letter} a déjà été devinée.`); // Alerte avant d'envoyer
+      return; // On sort de la fonction
     }
+  
+    // Envoyer la lettre au serveur
+    socket.emit('submitLetter', { roomId, playerId, letter });
+  
+    // Ajout de la lettre localement pour la prochaine mise à jour (mais uniquement après la réponse serveur)
+    setGuessedLetters((prevGuessedLetters) => [...prevGuessedLetters, letter]);
+
+    setLetter('');
   };
 
   return (
@@ -169,7 +231,9 @@ const Game = () => {
             )
           )}
           {message && <p className="text-lg mt-2">{message}</p>}
-          <p className="text-2xl font-bold mt-4">{displayWord}</p>
+          <p className="text-2xl font-bold mt-4">Mot à deviner {hiddenWord}</p>
+          {renderGuessedLetters()}
+
           {startingPlayer === playerId && (
             <div>
               <input 

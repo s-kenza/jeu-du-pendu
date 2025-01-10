@@ -19,7 +19,7 @@ const Layout: React.FC = () => {
       setToastMessage(location.state.message); // Affiche le message de toast
     }
     console.log("Authentifié:", isAuthenticated);
-  }, [location.state]);
+  }, [location.state, isAuthenticated]);
 
   return (
     <>
