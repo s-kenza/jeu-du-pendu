@@ -224,19 +224,21 @@ app.io.on("connection", (socket) => {
 			// Vérifier si le mot est complètement trouvé
 			const isWordGuessed = hiddenWord.replace(/ /g, '').toLowerCase() === wordToGuess.toLowerCase();
 			if (isWordGuessed) {
-				app.io.to(roomId).emit('gameWon', { winner: playerId, word: wordToGuess });
+				const looser = room.players.find(player => player.userId !== playerId).userId;
+				app.io.to(roomId).emit('gameWon', { winner: playerId, looser: looser, word: wordToGuess });
 				// Mise à jour de l'état du jeu à "finished" dans la base de données
 				try {
 					const game = await Game.findOne({ where: { id: roomId } });
 					if (game) {
 						game.state = 'finished';
+						game.winner = playerId;
 						await game.save();
-						console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId}`);
+						console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId} avec pour gagnant ${playerId}`);
 					}
 				} catch (error) {
 					console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
 				}
-				app.io.to(roomId).emit('gameEnded');
+				app.io.to(roomId).emit('gameEnded', { winner: playerId });
 			} else {
 				// Si le mot n'est pas encore trouvé, donner la main à l'autre joueur
 				const otherPlayer = room.players.find(player => player.socketId !== socket.id);
