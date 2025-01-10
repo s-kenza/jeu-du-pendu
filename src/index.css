@@ -8,7 +8,7 @@
 }
 
 [data-theme='light'] {
-    background: linear-gradient(to right, #4F83FF, #A66DFF);
+    background: linear-gradient(to right, #85B3FF, #C19DFF); /* Couleurs plus douces */
     color: black;
 }
 
