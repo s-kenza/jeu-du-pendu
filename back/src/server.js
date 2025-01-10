@@ -9,6 +9,11 @@ import fastifyJWT from "@fastify/jwt";
 //routes
 import { usersRoutes } from "./routes/users.js";
 import { gamesRoutes } from "./routes/games.js";
+import { wordsRoutes } from "./routes/words.js";
+import Word from "./models/words.js";
+import Game from './models/games.js';
+import { generateRandomWord }  from "./controllers/words.js";
+import { seedWords } from "./seed.js";
 //bdd
 import { sequelize } from "./bdd.js";
 //socket.io
@@ -101,53 +106,208 @@ app.decorate("authenticate", async (request, reply) => {
 		reply.send(err);
 	}
 });
-const rooms = new Map();
 
-app.io.on('connection', (socket) => {
-	console.log(`Joueur connecté: ${socket.id}`);
+const activeUsers = new Map(); // Map userId -> socket.id
+const rooms = new Map(); // Stocke les rooms et leurs joueurs
+const roomWords = new Map(); // Map pour stocker le mot de chaque room
+let roomState = new Map(); // roomState est une Map où chaque room a un état avec le mot à deviner et le mot caché
 
-	// Front
-	socket.emit('message', 'Vous êtes connecté');
+// Traiter la connexion
 
-	socket.on('joinRoom', (roomId) => {
+app.io.on("connection", (socket) => {
+	console.log(`Joueur connecté : ${socket.id}`);
+
+	socket.on('joinRoom', async ({ roomId, userId }) => {
+		console.log('UserId côté serveur:', userId);
 		if (!rooms.has(roomId)) {
-			rooms.set(roomId, [socket.id]);
-			socket.join(roomId);
-			socket.emit('roomJoined', { roomId, playerNumber: 1 });
-		} else if (rooms.get(roomId).length < 2) {
-			rooms.get(roomId).push(socket.id);
-			socket.join(roomId);
-			socket.emit('roomJoined', { roomId, playerNumber: 2 });
-			app.io.to(roomId).emit('gameStart');
-		} else {
-			socket.emit('roomFull');
+		  // Créer une nouvelle room
+		  rooms.set(roomId, []);
+		}
+
+		const players = rooms.get(roomId);
+
+		if (players.length >= 2) {
+			// Si la room est pleine, envoyer un événement au client
+			socket.emit('roomFull', { message: 'La partie est pleine.' });
+			return;
+		}
+
+		// Ajouter le joueur à la room
+		players.push({ socketId: socket.id, userId });
+		socket.join(roomId);
+		console.log(`User ${userId} a rejoint la room ${roomId}`);
+	
+		// Notifier le joueur qu'il a rejoint la room
+		socket.emit('roomJoined', { roomId, userId });
+	
+		// Si 2 joueurs sont dans la room, démarrer la partie
+		if (players.length === 2) {
+			const startingPlayer = players[Math.floor(Math.random() * players.length)].userId;
+
+			// Mise à jour de l'état du jeu à "playing" dans la base de données
+			try {
+				const game = await Game.findOne({ where: { id: roomId } });
+				if (game) {
+					game.state = 'playing';
+					await game.save();
+					console.log(`L'état du jeu dans la base de données a été mis à jour à "playing" pour la game ${roomId}`);
+				}
+			} catch (error) {
+				console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
+			}
+
+			// Générer un mot aléatoire
+			const randomWord = await generateRandomWord();
+			if (!randomWord) {
+				console.error("Aucun mot n'a été généré.");
+				return;
+			}
+
+			roomWords.set(roomId, randomWord);
+			const wordToGuess = randomWord.dataValues.name;
+
+			console.log(`Le mot à deviner est : ${wordToGuess}`);
+
+			app.io.to(roomId).emit('startingPlayer', startingPlayer);
+			app.io.to(roomId).emit('gameStart', { roomId, word: wordToGuess });
+			console.log(`La partie commence dans la room ${roomId} avec ${startingPlayer} qui commence`);
+		
+			// Initialisation d'une salle
+			const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); // Mot caché (avec des underscores)
+			const guessedLetters = []; // Liste des lettres devinées
+			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players })
 		}
 	});
 
-	socket.on('gameAction', (data) => {
-		const { roomId, action } = data;
-		socket.to(roomId).emit('opponentAction', action);
+	socket.on('gameStartAction', ({ roomId, playerId, word }) => {
+		console.log(`Le jeu commence dans la room ${roomId} avec le mot ${word}`);
+		app.io.to(roomId).emit('gameStarted', { word });
 	});
 
-	socket.on('disconnect', () => {
-		rooms.forEach((players, roomId) => {
-		  const index = players.indexOf(socket.id);
-		  if (index !== -1) {
-			players.splice(index, 1);
-			if (players.length === 0) {
-			  rooms.delete(roomId);
-			} else {
-			  app.io.to(roomId).emit('playerLeft');
+	socket.on('submitLetter', async ({ roomId, playerId, letter }) => {
+		const word = roomWords.get(roomId);
+		if(!word) return;
+
+		const room = roomState.get(roomId);
+    	if (!room) return;
+
+		console.log(`Lettre ${letter} envoyée par ${playerId} dans la room ${roomId}`)
+		
+		let { wordToGuess, hiddenWord, guessedLetters } = room;
+
+		// Vérifier si la lettre a déjà été devinée
+		if (guessedLetters.includes(letter)) {
+			socket.emit('letterAlreadyGuessed', { letter });
+			return;
+		}
+	
+		// Ajouter la lettre devinée
+		guessedLetters.push(letter);
+
+		// Mettre à jour le mot caché en remplaçant les underscores par la lettre correcte
+		let updatedHiddenWord = hiddenWord.split(' ');
+		let foundLetter = false;
+	
+		// Parcourir le mot à deviner et remplacer les "_" par la lettre correcte
+		for (let i = 0; i < wordToGuess.length; i++) {
+			if (wordToGuess[i].toUpperCase() === letter) {
+				updatedHiddenWord[i] = letter;
+				foundLetter = true;
 			}
+		}
+
+		// Si la lettre est présente, mettre à jour le mot caché
+		if (foundLetter) {
+			hiddenWord = updatedHiddenWord.join(' '); // Réassembler le mot caché
+			room.hiddenWord = hiddenWord; // Mettre à jour l'état de la room avec le nouveau mot caché
+	
+			// Vérifier si le mot est complètement trouvé
+			const isWordGuessed = hiddenWord.replace(/ /g, '').toLowerCase() === wordToGuess.toLowerCase();
+			if (isWordGuessed) {
+				const looser = room.players.find(player => player.userId !== playerId).userId;
+				app.io.to(roomId).emit('gameWon', { winner: playerId, looser: looser, word: wordToGuess });
+				// Mise à jour de l'état du jeu à "finished" dans la base de données
+				try {
+					const game = await Game.findOne({ where: { id: roomId } });
+					if (game) {
+						game.state = 'finished';
+						game.winner = playerId;
+						await game.save();
+						console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId} avec pour gagnant ${playerId}`);
+					}
+				} catch (error) {
+					console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
+				}
+				app.io.to(roomId).emit('gameEnded', { winner: playerId });
+			} else {
+				// Si le mot n'est pas encore trouvé, donner la main à l'autre joueur
+				const otherPlayer = room.players.find(player => player.socketId !== socket.id);
+				app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord });
+			}
+		} else {
+			// Si la lettre n'est pas dans le mot, passer à l'autre joueur
+			const otherPlayer = room.players.find(player => player.socketId !== socket.id);
+			app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord });
+		}
+
+		// Envoyer l'événement 'letterGuessed' à tous les joueurs pour qu'ils mettent à jour leurs lettres devinées
+		app.io.to(roomId).emit('letterGuessed', { letter });
+	})
+
+	// Écouter un événement de connexion de l'utilisateur avec son userId
+	socket.on('register', (userId) => {
+		console.log(`Utilisateur enregistré : ${userId}`);
+		
+		// Si l'utilisateur a un socket actif, déconnectez-le
+		if (activeUsers.has(userId)) {
+		  const oldSocketId = activeUsers.get(userId);
+		  const oldSocket = app.io.sockets.sockets.get(oldSocketId);
+		  if (oldSocket) {
+			oldSocket.disconnect(); // Déconnecte l'ancien socket
 		  }
+		}
+	
+		// Enregistrer le nouvel ID socket
+		activeUsers.set(userId, socket.id);
+	
+		// Gérer la déconnexion
+		socket.on('disconnect', () => {
+			console.log(`Client déconnecté : ${socket.id}`);
+
+		   	// Supprimer l'utilisateur de la liste des utilisateurs actifs
+			if (activeUsers.get(userId) === socket.id) {
+				activeUsers.delete(userId);
+			}
+
+			// Supprimer le socket déconnecté des rooms
+			rooms.forEach((players, roomId) => {
+				const updatedPlayers = players.filter(player => player.socketId !== socket.id);
+				if (updatedPlayers.length === 0) {
+					rooms.delete(roomId); // Supprimer la room si vide
+				} else {
+					rooms.set(roomId, updatedPlayers);
+				}
+			});
 		});
 	});
 });
-// app.io.to('room').emit('message', 'coucou');
+
 //gestion utilisateur
 usersRoutes(app);
 //gestion des jeux
 gamesRoutes(app);
+//gestion des mots
+wordsRoutes(app);
+
+async function ensureWordsTableFilled() {
+	const wordCount = await Word.count();
+	if (wordCount === 0) {
+	  console.log("La table des mots est vide. Remplissage en cours...");
+	  await seedWords();
+	} else {
+	  console.log(`La table des mots contient déjà ${wordCount} mots.`);
+	}
+  }
 
 /**********
  * START
@@ -166,6 +326,7 @@ const start = async () => {
 				);
 			});
 		await app.listen({ port: 3000 });
+		await ensureWordsTableFilled();
 		console.log(
 			"Serveur Fastify lancé sur " + chalk.blue("http://localhost:3000")
 		);

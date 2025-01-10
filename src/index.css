@@ -17,6 +17,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    margin-top: 1em;
 }
 
 .navbar {
@@ -42,6 +43,34 @@ button.create {
     margin-top: 1em;
 }
 
+button.exit {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    background: #eb2525;
+    justify-content: center;
+    margin-top: 1em;
+}
+
+button.refresh {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    justify-content: center;
+}
+
+button.refresh:hover {
+    background-color: rgba(37, 99, 235, 0.5); /* Couleur avec opacité */
+}
+
 button.join {
     padding: 0.5rem 1rem;
     border-radius: 0.25rem;
@@ -63,6 +92,62 @@ button.join {
     background: rgba(255, 255, 255, 0.1);
 }
 
+.card .title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem;
+}
+
+.card .title h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    flex: 1;
+    text-align: center;
+}
+
+.card .waiting {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.card .waiting h2 {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.card .waiting .loading {
+    display: inline-block;
+    margin-left: 0.25rem;
+    align-self: flex-end;
+    transform: translateY(0.15rem);
+}
+
+.loading-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+}
+
+.loading-screen .custom-loading {
+    width: 80px;
+    height: 80px;
+}
+
+.modal {
+    z-index: 10;
+}
+
+.magic-ui-confettis {
+    position: absolute;
+    z-index: 9999; /* Un nombre élevé pour passer au-dessus */
+}
+
 p.description {
     font-size: 1.2rem;
     font-weight: 500;
@@ -73,4 +158,10 @@ p.description {
     font-size: 1rem;
     font-weight: 400;
     margin-bottom: 1rem;
+}
+
+@layer base {
+  :root {
+        --radius: 0.5rem;
+    }
 }
