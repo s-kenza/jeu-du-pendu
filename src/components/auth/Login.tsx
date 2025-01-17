@@ -22,11 +22,11 @@ const BasicForm = () => {
       });
       const data = await response.json();
       console.log(data);
-  
+
       if (response.ok && data.token) {
         // 2. Si la connexion est réussie, obtenir le token
         const token = data.token;
-        
+
         // 3. Vérifier les utilisateurs via la route GET /users
         const userResponse = await fetch('http://localhost:3000/users', {
           method: 'GET',
@@ -35,15 +35,15 @@ const BasicForm = () => {
           },
         });
         const usersData = await userResponse.json();
-        
+
         if (userResponse.ok) {
           // 4. Chercher l'utilisateur en utilisant l'email et le mot de passe
-          const currentUser = usersData.find((user: any) => 
+          const currentUser = usersData.find((user: any) =>
             user.email === values.email
         );
-        
+
         console.log(currentUser)
-        
+
         if (currentUser) {
             // 5. Stocker l'`userId` dans le localStorage
             login(token, currentUser.id);  // Connecter l'utilisateur avec le token
@@ -55,7 +55,7 @@ const BasicForm = () => {
           setErrorMessage('Impossible de récupérer les utilisateurs.');
         }
       } else {
-        setErrorMessage(data.error || 'Une erreur est survenue');
+        setErrorMessage('Une erreur est survenue');
       }
     } catch (error) {
       console.error("Erreur lors de la connexion :", error);
@@ -68,7 +68,7 @@ const BasicForm = () => {
   return (
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
-        <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>  
+        <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>
         <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
           <Formik
             initialValues={{ email: '', password: '' }}
@@ -83,9 +83,9 @@ const BasicForm = () => {
                 <Field name="email" label="E-mail" component={CustomInputComponent} />
                 <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting} 
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
                   className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
                 >
                   <span className="inline-block mr-2">Je me connecte</span>
@@ -96,7 +96,12 @@ const BasicForm = () => {
               </Form>
             )}
           </Formik>
-          
+            {errorMessage && (
+              <div className="text-red-500 text-center mt-2">
+                {errorMessage}
+              </div>
+            )}
+
           {/* Boutons additionnels et Liens */}
           <div className="py-5">
             <div className="grid grid-cols-2 gap-1">
@@ -150,17 +155,17 @@ const BasicForm = () => {
                     type="button"
                     className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                       className="w-4 h-4 inline-block align-text-bottom">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                       />
                     </svg>
                     <span className='inline-block ml-1'>Pas de compte ? Je m'inscris</span>
