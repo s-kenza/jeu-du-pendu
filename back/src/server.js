@@ -111,6 +111,8 @@ const activeUsers = new Map(); // Map userId -> socket.id
 const rooms = new Map(); // Stocke les rooms et leurs joueurs
 const roomWords = new Map(); // Map pour stocker le mot de chaque room
 let roomState = new Map(); // roomState est une Map où chaque room a un état avec le mot à deviner et le mot caché
+let creatingNewGame = new Set(); // Pour suivre les rooms en cours de création de partie
+const playersReadyInRoom = {}; // Pour suivre les joueurs prêts à rejouer
 
 // Traiter la connexion
 
@@ -253,6 +255,130 @@ app.io.on("connection", (socket) => {
 		// Envoyer l'événement 'letterGuessed' à tous les joueurs pour qu'ils mettent à jour leurs lettres devinées
 		app.io.to(roomId).emit('letterGuessed', { letter });
 	})
+
+	socket.on('playerWantsReplay', async ({ playerId, roomId }) => {
+		console.log(`Joueur ${playerId} veut rejouer`);
+		
+		if (!playersReadyInRoom[roomId]) {
+			playersReadyInRoom[roomId] = [];
+		}
+
+		if (!playersReadyInRoom[roomId].includes(playerId)) {
+			playersReadyInRoom[roomId].push(playerId);
+		}
+
+		console.log(`Les joueurs prêts : ${playersReadyInRoom[roomId]}`);
+		
+		app.io.to(roomId).emit('updateReplayStatus', { playerId });
+
+		if (playersReadyInRoom[roomId].length === 2) {
+			app.io.to(roomId).emit('bothPlayersReady', { playersReady: playersReadyInRoom[roomId] });
+		}
+		// 	if (creatingNewGame.has(roomId)) return;
+	
+		// 	creatingNewGame.add(roomId);
+			
+		// 	try {
+		// 		// Vérifier si une partie existe déjà pour cette room
+		// 		let game = await Game.findOne({ where: { id: roomId } });
+			
+		// 		if (!game) {
+		// 		// Créer une nouvelle partie si elle n'existe pas
+		// 		game = await Game.create({ id: roomId, state: 'playing' });
+		// 		} else {
+		// 		// Mettre à jour l'état de la partie existante
+		// 		game.state = 'pending';
+		// 		await game.save();
+		// 		}
+
+		// 		// Faire rejoindre les joueurs à la room
+		// 		const players = rooms.get(roomId) || [];
+		// 		players.forEach(player => {
+		// 			app.io.to(player.socketId).emit('joinRoom', { roomId, userId: player.userId });
+		// 		});
+			
+		// 		console.log(`Nouvelle partie créée dans la room ${roomId} avec les joueurs ${players[0].userId} et ${players[1].userId}`);
+				
+				
+		// 		app.io.to(roomId).emit('newGameCreated', { roomId, playersReadyInRoom });
+			
+		// 	} catch (error) {
+		// 		console.error("Erreur lors de la création de la nouvelle partie:", error);
+		// 	} finally {
+		// 		creatingNewGame.delete(roomId);
+		// 	}
+
+		// 	// Réinitialiser les joueurs prêts
+		// 	playersReadyInRoom[roomId] = [];
+		// }
+	});
+
+	socket.on('allPlayersReady', async ({ player1Id, player2Id }) => {
+		console.log(`Les deux joueurs sont prêts pour une nouvelle partie`);
+		
+		try {
+			// Créer une nouvelle partie
+			const game = await Game.create({ state: 'pending', creator: 'SMIALI', winner: null });
+	
+			// Récupérer les infos de la partie que je viens de créer
+			const gameCreated = await Game.findOne({ where: { id: game.id } });
+			const roomId = gameCreated.id;  // Utiliser l'ID de la partie comme roomId
+	
+			console.log(`Nouvelle partie créée dans la room ${roomId}`);
+	
+			// Créer la room si elle n'existe pas
+			if (!rooms.has(roomId)) {
+				rooms.set(roomId, []);
+			}
+	
+			// Ajouter les deux joueurs à la room
+			const players = rooms.get(roomId);
+			
+			players.push({ socketId: socket.id, userId: player1Id });
+			players.push({ socketId: socket.id, userId: player2Id });
+	
+			// Faire rejoindre les sockets à la room
+			socket.join(roomId);
+	
+			console.log(`Joueurs ${player1Id} et ${player2Id} ont rejoint la room ${roomId}`);
+	
+			// Vérifier que les deux joueurs sont bien dans la room
+			if (players.length === 2) {
+				const startingPlayer = players[Math.floor(Math.random() * players.length)].userId;
+	
+				// Mettre à jour l'état du jeu à "playing"
+				gameCreated.state = 'playing';
+				await gameCreated.save();
+				console.log(`L'état du jeu dans la base de données a été mis à jour à "playing" pour la game ${roomId}`);
+	
+				// Générer un mot aléatoire
+				const randomWord = await generateRandomWord();
+				if (!randomWord) {
+					console.error("Aucun mot n'a été généré.");
+					return;
+				}
+	
+				roomWords.set(roomId, randomWord);
+				const wordToGuess = randomWord.dataValues.name;
+				console.log(`Le mot à deviner est : ${wordToGuess}`);
+	
+				// Émettre l'événement pour démarrer la partie
+				app.io.to(roomId).emit('newGameCreated', { roomId, startingPlayer, word: wordToGuess });
+				app.io.to(roomId).emit('startingPlayer', startingPlayer);
+				app.io.to(roomId).emit('gameStart', { roomId, word: wordToGuess });
+				console.log(`La partie commence dans la room ${roomId} avec ${startingPlayer} qui commence`);
+	
+				// Initialisation de l'état de la salle
+				const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); 
+				const guessedLetters = []; 
+				roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players });
+			}
+	
+		} catch (error) {
+			console.error("Erreur lors de la création de la nouvelle partie:", error);
+		}
+	});
+	
 
 	// Écouter un événement de connexion de l'utilisateur avec son userId
 	socket.on('register', (userId) => {
