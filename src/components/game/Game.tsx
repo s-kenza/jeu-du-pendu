@@ -24,12 +24,12 @@ const Game = () => {
   const [guessedLetters, setGuessedLetters] = useState<string[]>([]); // Liste des lettres déjà devinées
   const [winner, setWinner] = useState<string | null>(null);
   const [loser, setLoser] = useState<string | null>(null);
+  const [scores, setScores] = useState<Record<string, number>>({});
   const [players, setPlayers] = useState([
-    { id: playerId, name: winner, points: 1 },
-    { id: playerId, name: loser, points: 0 }
+    { id: playerId, name: winner ?? "", points: winner ? scores[winner] || 0 : 0 },
+    { id: playerId, name: loser ?? "", points: loser ? scores[loser] || 0 : 0 },
   ]);
   const [playersReady, setPlayersReady] = useState<string[] | null>([]);
-  const navigate = useNavigate(); 
 
   useEffect(() => {
     if (!userId) return;
@@ -91,6 +91,7 @@ const Game = () => {
       setGameEndMessage(`${winner} a gagné ! Le mot était : ${word}`);
       setWinner(winner);
       setLoser(looser);
+      setScores(scores);
 
       console.log("Scores:", scores);
 
@@ -180,7 +181,7 @@ const Game = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
         },
       });
       const data = await response.json();
@@ -192,7 +193,7 @@ const Game = () => {
   };
 
   const createGame = async () => {
-    const token = localStorage.getItem('authToken');
+    const token = sessionStorage.getItem('authToken');
     try {
       const response = await fetch('http://localhost:3000/game', {
         method: 'POST',
@@ -205,7 +206,6 @@ const Game = () => {
       const newGame = await response.json();
       console.log("Nouvelle partie créée:", newGame);
       setRoomId(newGame.gameId);
-      socket.emit('joinRoom', newGame.gameId);
     } catch (error) {
       console.error("Erreur lors de la création de la partie:", error);
     }

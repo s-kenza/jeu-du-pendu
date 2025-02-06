@@ -1,15 +1,19 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { io } from "socket.io-client";
 
 // Types pour AuthContext
 interface AuthContextType {
   isAuthenticated: boolean;
   userId: string | null;
   login: (token: string, userId: string) => void;
-  logout: () => void;
+  logout: (userId: string) => void;
 }
 
 // Création du contexte avec une valeur par défaut
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Connexion au serveur WebSocket
+const socket = io("http://localhost:3000"); 
 
 // Fournisseur d'authentification
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -18,16 +22,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fonction pour gérer la connexion
   const login = (token: string, userId: string) => {
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('userId', userId);
+    sessionStorage.setItem('authToken', token);
+    sessionStorage.setItem('userId', userId);
     setIsAuthenticated(true);
     setUserId(userId);
   };
 
   // Fonction pour gérer la déconnexion
-  const logout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
+  const logout = (userId: string) => {
+    socket.disconnect();
+    socket.emit('disconnected', userId);
+    sessionStorage.removeItem('authToken');
+    sessionStorage.removeItem('userId');
     setIsAuthenticated(false);
     setUserId(null);
   };
@@ -35,8 +41,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Vérification de l'authentification au chargement de l'application
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    const storedUserId = localStorage.getItem('userId');
+    const token = sessionStorage.getItem('authToken');
+    const storedUserId = sessionStorage.getItem('userId');
   
     if (token && token.trim() !== "") {
       setIsAuthenticated(true);
@@ -44,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       setIsAuthenticated(false);
       setUserId(null);
+      socket.disconnect();
     }
   }, []);  
 
