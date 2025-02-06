@@ -86,15 +86,17 @@ const Game = () => {
       setStartingPlayer(playerId);
     });
 
-    newSocket.on('gameWon', ({ winner, word, looser }) => {
+    newSocket.on('gameWon', ({ winner, word, looser, scores }) => {
       // Mettre à jour le message de fin de jeu
       setGameEndMessage(`${winner} a gagné ! Le mot était : ${word}`);
       setWinner(winner);
       setLoser(looser);
 
+      console.log("Scores:", scores);
+
       setPlayers([
-        { id: winner, name: winner, points: 1 },
-        { id: looser, name: looser, points: 0 }
+        { id: winner, name: winner, points: scores[winner] || 0 },
+        { id: looser, name: looser, points: scores[looser] || 0 }
       ]);
       // Mettre à jour l'état pour finir le jeu
       setIsGameStarted(false);
@@ -122,15 +124,11 @@ const Game = () => {
         }
         return prevPlayers;
       });
-      console.log("Les joueurs prêts sont :", playersReady);
     });    
 
-    newSocket.on('bothPlayersReady', ({ playersReady, roomId }) => {
-      console.log("Les deux joueurs sont prêts à commencer la partie :", playersReady );
-      const modal = document.getElementById('my_modal_1');
-      if (modal) {
-        modal.close(); // Fermer le modal
-      }
+    newSocket.on('bothPlayersReady', () => {
+      setPlayersReady([]);
+      setGuessedLetters([]);
     });
 
     newSocket.on('gameEnded', ({ winner }) => {
@@ -218,15 +216,6 @@ const Game = () => {
     setPlayerId(userId);
   };
 
-  const chooseStartingPlayer = (players: string[]) => {
-    setIsChoosing(true);
-    setTimeout(() => {
-      const randomPlayer = players[Math.floor(Math.random() * players.length)];
-      setStartingPlayer(randomPlayer);
-      setIsChoosing(false);
-    }, 3000);
-  };
-
   // Afficher les lettres déjà jouées (barrées)
   const renderGuessedLetters = () => {
     return (
@@ -281,11 +270,16 @@ const Game = () => {
   }
 
   const handleExitGame = () => {
+    const modal = document.getElementById('my_modal_1');
+    if (modal) {
+      modal.close(); // Fermer le modal
+    }
     setIsLoading(true); // Activer le chargement
     setTimeout(() => {
       setRoomId(null);
       setIsGameStarted(false);
       fetchGames(); // Mettre à jour la liste des parties
+      setGuessedLetters([]); // Réinitialiser les lettres devinées
     }, 1500); // Temps simulé pour l'actualisation
   };
 
@@ -412,7 +406,7 @@ const Game = () => {
             
               {/* Bouton pour fermer le modal si nécessaire */}
               <div className="modal-action">
-                <button className="btn" onClick={() => document.getElementById('my_modal_1').close()}>
+                <button className="btn" onClick={handleExitGame}>
                   Fermer
                 </button>
               </div>
