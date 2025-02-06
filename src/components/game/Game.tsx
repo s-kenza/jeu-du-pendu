@@ -2,6 +2,8 @@ import { useContext, useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { io } from 'socket.io-client';
 import confetti from "canvas-confetti";
+import { useNavigate } from "react-router-dom";
+import NewGameWaiting from "./NewGameWaiting";
 
 
 const Game = () => {
@@ -23,9 +25,11 @@ const Game = () => {
   const [winner, setWinner] = useState<string | null>(null);
   const [loser, setLoser] = useState<string | null>(null);
   const [players, setPlayers] = useState([
-    { id: 1, name: winner, points: 1 },
-    { id: 2, name: loser, points: 0 }
+    { id: playerId, name: winner, points: 1 },
+    { id: playerId, name: loser, points: 0 }
   ]);
+  const [playersReady, setPlayersReady] = useState<string[] | null>([]);
+  const navigate = useNavigate(); 
 
   useEffect(() => {
     if (!userId) return;
@@ -36,7 +40,6 @@ const Game = () => {
     newSocket.emit('register', userId);
 
     if (roomId !== null) {
-      console.log("UserId avant joinRoom:", userId);
       newSocket.emit('joinRoom', { roomId, userId });
     }
 
@@ -83,18 +86,21 @@ const Game = () => {
       setStartingPlayer(playerId);
     });
 
-    newSocket.on('gameWon', ({ winner, word, looser }) => {
+    newSocket.on('gameWon', ({ winner, word, looser, scores }) => {
       // Mettre à jour le message de fin de jeu
       setGameEndMessage(`${winner} a gagné ! Le mot était : ${word}`);
       setWinner(winner);
       setLoser(looser);
 
+      console.log("Scores:", scores);
+
       setPlayers([
-        { id: 1, name: winner, points: 1 },
-        { id: 2, name: looser, points: 0 }
+        { id: winner, name: winner, points: scores[winner] || 0 },
+        { id: looser, name: looser, points: scores[looser] || 0 }
       ]);
       // Mettre à jour l'état pour finir le jeu
       setIsGameStarted(false);
+      setGuessedLetters([]);
     });
 
     newSocket.on('letterAlreadyGuessed', ({ letter }) => {
@@ -109,6 +115,20 @@ const Game = () => {
         }
         return prevGuessedLetters;
       });
+    });
+
+    newSocket.on('updateReplayStatus', ({ playerId }) => {
+      setPlayersReady((prevPlayers) => {
+        if (!prevPlayers.includes(playerId)) {
+          return [...prevPlayers, playerId];
+        }
+        return prevPlayers;
+      });
+    });    
+
+    newSocket.on('bothPlayersReady', () => {
+      setPlayersReady([]);
+      setGuessedLetters([]);
     });
 
     newSocket.on('gameEnded', ({ winner }) => {
@@ -142,6 +162,9 @@ const Game = () => {
     
         frame();
       }
+
+      setGuessedLetters([]);
+
     });
 
     fetchGames();
@@ -162,7 +185,6 @@ const Game = () => {
       });
       const data = await response.json();
       setGames(data.filter((game: any) => game.state === 'pending'));
-      console.log("Parties récupérées:", data);
       setIsLoading(false);
     } catch (error) {
       console.error("Erreur lors de la récupération des parties:", error);
@@ -171,7 +193,6 @@ const Game = () => {
 
   const createGame = async () => {
     const token = localStorage.getItem('authToken');
-    console.log(token);
     try {
       const response = await fetch('http://localhost:3000/game', {
         method: 'POST',
@@ -195,15 +216,6 @@ const Game = () => {
     setPlayerId(userId);
   };
 
-  const chooseStartingPlayer = (players: string[]) => {
-    setIsChoosing(true);
-    setTimeout(() => {
-      const randomPlayer = players[Math.floor(Math.random() * players.length)];
-      setStartingPlayer(randomPlayer);
-      setIsChoosing(false);
-    }, 3000);
-  };
-
   // Afficher les lettres déjà jouées (barrées)
   const renderGuessedLetters = () => {
     return (
@@ -216,19 +228,20 @@ const Game = () => {
   };
 
   useEffect(() => {
+    const modal = document.getElementById('my_modal_1');
+
     if (startingPlayer) {
       // Quand le joueur qui commence est défini, afficher le message
       setMessage(`${startingPlayer}, c'est à toi de commencer ! Renseigne une lettre.`);
     }
 
     if (gameEndMessage && !isGameStarted) {
-      const modal = document.getElementById('my_modal_1');
       if (modal) {
         modal.showModal(); // Ouvrir le modal
       }
     }
 
-  }, [startingPlayer, gameEndMessage, isGameStarted]); // Lancer le jeu automatiquement dès qu'on connaît le joueur qui commence
+  }, [startingPlayer, gameEndMessage, isGameStarted]);
 
   const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     setLetter(event.target.value.toUpperCase()); // Enregistrer la lettre en majuscule
@@ -237,7 +250,7 @@ const Game = () => {
   const submitLetter = () => {
     if (guessedLetters.includes(letter)) {
       alert(`La lettre ${letter} a déjà été devinée.`); // Alerte avant d'envoyer
-      return; // On sort de la fonction
+      return;
     }
   
     // Envoyer la lettre au serveur
@@ -257,15 +270,25 @@ const Game = () => {
   }
 
   const handleExitGame = () => {
+    const modal = document.getElementById('my_modal_1');
+    if (modal) {
+      modal.close(); // Fermer le modal
+    }
     setIsLoading(true); // Activer le chargement
     setTimeout(() => {
       setRoomId(null);
       setIsGameStarted(false);
       fetchGames(); // Mettre à jour la liste des parties
+      setGuessedLetters([]); // Réinitialiser les lettres devinées
     }, 1500); // Temps simulé pour l'actualisation
   };
 
   const sortedPlayers = players.sort((a, b) => b.points - a.points);
+
+  const replay = (playerId : string) => {
+    if (!playerId) return;
+    socket.emit('playerWantsReplay', { playerId, roomId });
+  }
 
   return (
     <div>
@@ -274,8 +297,8 @@ const Game = () => {
           <div className="title">
             <h2>Parties disponibles</h2>
             <button className="refresh" onClick={refreshGameList}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
               </svg>
             </button>
           </div>
@@ -288,8 +311,8 @@ const Game = () => {
           <div className="title">
             <h2>Parties disponibles</h2>
             <button className="refresh" onClick={refreshGameList}>
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
               </svg>
             </button>
           </div>
@@ -327,41 +350,78 @@ const Game = () => {
       {/* Afficher le message de fin de jeu si le jeu est terminé */}
       {gameEndMessage && !isGameStarted && (
         <div className="card game-end-message">
+
+          {/* Modal */}
           <dialog id="my_modal_1" className="modal">
             <div className="modal-box">
-              <h3 className="font-bold text-lg">Fin de partie !</h3>
+              <h3 className="font-bold text-lg">Fin de partie ! 🎮</h3>
+
+              {/* Tableau des scores */}
               <div className="overflow-x-auto">
-                <table className="table">
-                  {/* head */}
-                  <thead>
-                    <tr>
-                      <th>Classement</th>
-                      <th>Joueur</th>
-                      <th>Points</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Classement</th>
+                    <th>Joueur</th>
+                    <th>Points</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
                   {sortedPlayers.map((player, index) => (
-                    <tr key={player.name} className={index % 2 === 0 ? "bg-base-200" : ""}>
+                    <tr key={`${player.id}-${index}`} className={index % 2 === 0 ? "bg-base-200" : ""}>
                       <th>{index + 1}</th>
-                      <td>{player.name}</td>
+
+                      {/* Nom en vert si prêt */}
+                      <td className={playersReady.includes(player.id) ? 'text-green-500 font-bold' : ''}>
+                        {player.name}
+                      </td>
+
                       <td>{player.points}</td>
+
+                      {/* Bouton pour rejouer */}
+                      <td>
+                        {player.name === playerId ? (
+                          <button 
+                            className={`btn ${playersReady.includes(player.id) ? 'btn-disabled' : ''}`}
+                            onClick={() => replay(player.id)}
+                            disabled={playersReady.includes(player.id)}
+                          >
+                            {playersReady.includes(player.id) ? 'Prêt' : 'Rejouer'}
+                          </button>
+                        ) : (
+                          <button className="btn btn-disabled opacity-50 cursor-not-allowed">
+                            {playersReady.includes(player.id) ? 'Prêt' : 'En attente'}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="py-4">{gameEndMessage}</p>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Message de fin */}
+            <p className="py-4 text-center">{gameEndMessage}</p>
+            
+              {/* Bouton pour fermer le modal si nécessaire */}
               <div className="modal-action">
-                <form method="dialog">
-                  <button className="btn">Rejouer</button>
-                  <button className="btn">Quitter</button>
-                </form>
+                <button className="btn" onClick={handleExitGame}>
+                  Fermer
+                </button>
               </div>
             </div>
           </dialog>
         </div>
       )}
+
+    <div>
+      <NewGameWaiting 
+        isLoading={isLoading} 
+        playersReady={playersReady}
+        setPlayersReady={setPlayersReady}
+      />
+    </div>
 
       {isGameStarted && (
         <div className="card">
@@ -385,6 +445,7 @@ const Game = () => {
                 type="text" 
                 value={letter} 
                 onChange={handleLetterInput} 
+                onKeyDown={(e) => e.key === 'Enter' && submitLetter()}
                 maxLength={1} 
                 placeholder="Entrez une lettre" 
                 className="input"
