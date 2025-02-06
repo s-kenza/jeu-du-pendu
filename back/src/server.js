@@ -10,14 +10,17 @@ import fastifyJWT from "@fastify/jwt";
 import { usersRoutes } from "./routes/users.js";
 import { gamesRoutes } from "./routes/games.js";
 import { wordsRoutes } from "./routes/words.js";
+import { scoresRoutes } from "./routes/scores.js";
 import Word from "./models/words.js";
 import Game from './models/games.js';
+import Scores from "./models/scores.js";
 import { generateRandomWord }  from "./controllers/words.js";
 import { seedWords } from "./seed.js";
 //bdd
 import { sequelize } from "./bdd.js";
 //socket.io
 import socketioServer from 'fastify-socket.io';
+import { createScore } from "./controllers/scores.js";
 
 //Test de la connexion
 try {
@@ -141,6 +144,14 @@ app.io.on("connection", (socket) => {
 	
 		// Notifier le joueur qu'il a rejoint la room
 		socket.emit('roomJoined', { roomId, userId });
+
+		// Initialiser les scores pour la base de données
+		try {
+			const score = await createScore(userId, roomId);
+			console.log(`Score initialisé pour le joueur ${userId} dans la game ${roomId}`);
+		} catch (error) {
+			console.error("Erreur lors de l'initialisation du score :", error);
+		}
 	
 		// Si 2 joueurs sont dans la room, démarrer la partie
 		if (players.length === 2) {
@@ -177,11 +188,15 @@ app.io.on("connection", (socket) => {
 			// Initialisation d'une salle
 			const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); // Mot caché (avec des underscores)
 			const guessedLetters = []; // Liste des lettres devinées
+			const scores = {};
+			players.forEach(player => {
+				scores[player.userId] = 0;
+			});
 			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players, scores: {} })
 		}
 	});
 
-	socket.on('gameStartAction', ({ roomId, playerId, word }) => {
+	socket.on('gameStartAction', ({ roomId, word }) => {
 		console.log(`Le jeu commence dans la room ${roomId} avec le mot ${word}`);
 		app.io.to(roomId).emit('gameStarted', { word });
 	});
@@ -226,15 +241,10 @@ app.io.on("connection", (socket) => {
 			// Vérifier si le mot est complètement trouvé
 			const isWordGuessed = hiddenWord.replace(/ /g, '').toLowerCase() === wordToGuess.toLowerCase();
 			if (isWordGuessed) {
-				if (!room.scores[playerId]) {
-					room.scores[playerId] = 0;
-				}
-				room.scores[playerId]++;
+				// Incrémenter le score du joueur
+				room.scores[playerId] = (room.scores[playerId] || 0) + 1;
 
 				const looser = room.players.find(player => player.userId !== playerId).userId;
-				if (!room.scores[looser]) {
-					room.scores[looser] = 0;
-				}
 
 				app.io.to(roomId).emit('gameWon', { winner: playerId, looser: looser, word: wordToGuess, scores: room.scores });
 				// Mise à jour de l'état du jeu à "finished" dans la base de données
@@ -245,6 +255,13 @@ app.io.on("connection", (socket) => {
 						game.winner = playerId;
 						await game.save();
 						console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId} avec pour gagnant ${playerId}`);
+					}
+
+					const score = await Scores.findOne({ where: { playerId: playerId, gameId: roomId } });
+					if (score) {
+						score.score = room.scores[playerId];
+						await score.save();
+						console.log(`Le score du joueur ${playerId} a été mis à jour à ${room.scores[playerId]}`);
 					}
 				} catch (error) {
 					console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
@@ -267,6 +284,10 @@ app.io.on("connection", (socket) => {
 
 	socket.on('playerWantsReplay', async ({ playerId, roomId }) => {
 		console.log(`Joueur ${playerId} veut rejouer`);
+
+		const room = roomState.get(roomId);
+		const players = rooms.get(roomId);
+		const currentScores = room ? room.scores : {};
 		
 		if (!playersReadyInRoom[roomId]) {
 			playersReadyInRoom[roomId] = [];
@@ -278,12 +299,10 @@ app.io.on("connection", (socket) => {
 		
 		app.io.to(roomId).emit('updateReplayStatus', { playerId });
 
-		const players = rooms.get(roomId);
-
 		if (playersReadyInRoom[roomId].length === 2) {
 			const startingPlayer = playerId;
-
 			console.log('startingPlayer:', startingPlayer);
+			
 			// Mise à jour de l'état du jeu à "playing" dans la base de données
 			try {
 				const game = await Game.findOne({ where: { id: roomId } });
@@ -315,7 +334,13 @@ app.io.on("connection", (socket) => {
 			// Initialisation d'une salle
 			const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); // Mot caché (avec des underscores)
 			const guessedLetters = []; // Liste des lettres devinées
-			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players, scores: {} })
+			
+			// Ajout du score accumulé à la partie précédente
+			const scores = {};
+			players.forEach(player => {
+				scores[player.userId] = currentScores[player.userId] || 0;
+			});
+			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players, scores })
 
 			app.io.to(roomId).emit('bothPlayersReady');
 			// Réinitialiser les joueurs prêts
@@ -359,6 +384,25 @@ app.io.on("connection", (socket) => {
 			});
 		});
 	});
+
+	socket.on('disconnected', (userId) => {
+		console.log(`Client déconnecté : ${socket.id}`);
+
+		// Supprimer l'utilisateur de la liste des utilisateurs actifs
+		if (activeUsers.get(userId) === socket.id) {
+			activeUsers.delete(userId);
+		}
+
+		// Supprimer le socket déconnecté des rooms
+		rooms.forEach((players, roomId) => {
+			const updatedPlayers = players.filter(player => player.socketId !== socket.id);
+			if (updatedPlayers.length === 0) {
+				rooms.delete(roomId); // Supprimer la room si vide
+			} else {
+				rooms.set(roomId, updatedPlayers);
+			}
+		});
+	});
 });
 
 //gestion utilisateur
@@ -367,6 +411,8 @@ usersRoutes(app);
 gamesRoutes(app);
 //gestion des mots
 wordsRoutes(app);
+//gestion des scores
+scoresRoutes(app);
 
 async function ensureWordsTableFilled() {
 	const wordCount = await Word.count();

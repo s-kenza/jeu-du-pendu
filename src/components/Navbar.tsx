@@ -7,7 +7,7 @@ const Navbar = () => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
     const location = useLocation(); // Récupère l'URL actuelle pour surveiller les changements de navigation
     const navigate = useNavigate(); // Permet de naviguer via React Router
-    const { isAuthenticated, logout } = useAuth();
+    const { isAuthenticated, logout, userId } = useAuth();
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -32,13 +32,13 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
-        // Supprime le token du localStorage
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        // Supprime le token du sessionStorage
+        sessionStorage.removeItem('authToken');
+        sessionStorage.removeItem('user');
         // Redirige vers la page d'accueil ou de connexion
         navigate('/');
         // Déconnecte l'utilisateur
-        logout();
+        logout(userId || '');
     };
 
     useEffect(() => {

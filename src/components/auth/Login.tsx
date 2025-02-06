@@ -45,7 +45,7 @@ const BasicForm = () => {
         console.log(currentUser)
         
         if (currentUser) {
-            // 5. Stocker l'`userId` dans le localStorage
+            // 5. Stocker l'`userId` dans le sessionStorage
             login(token, currentUser.id);  // Connecter l'utilisateur avec le token
             navigate('/game', { state: { message: 'Vous êtes connecté' } });
           } else {
