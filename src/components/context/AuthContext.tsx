@@ -34,6 +34,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     socket.emit('disconnected', userId);
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('userId');
+    sessionStorage.removeItem('toastShown');
+    sessionStorage.removeItem('roomId');
     setIsAuthenticated(false);
     setUserId(null);
   };
