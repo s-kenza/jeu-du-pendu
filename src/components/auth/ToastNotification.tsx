@@ -13,20 +13,10 @@ const ToastNotification = ({ message, setMessage }) => {
   return (
     <div className="toast toast-top toast-center z-50">
       <div className="alert alert-success shadow-lg">
-        <div>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            className="stroke-current flex-shrink-0 w-6 h-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M9 12l2 2 4-4m0 6a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
+        <div className="flex items-center gap-4">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+          <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+        </svg>
           <span>{message}</span>
         </div>
       </div>

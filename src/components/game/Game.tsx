@@ -1,15 +1,17 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { io } from 'socket.io-client';
 import confetti from "canvas-confetti";
-import { useNavigate } from "react-router-dom";
-import NewGameWaiting from "./NewGameWaiting";
-
+import { BorderBeam } from "../border-beam.tsx";
+import { Particles } from "../particles.tsx";
+import { SparklesText } from "../sparkles-text.tsx";
+import { InteractiveHoverButton } from "../interactive-hover-button.tsx";
+import { PulsatingButton } from "../pulsating-button.tsx"
 
 const Game = () => {
   const [socket, setSocket] = useState<any>(null);
   const [games, setGames] = useState([]);
-  const [roomId, setRoomId] = useState(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [gameEndMessage, setGameEndMessage] = useState('');
@@ -30,6 +32,11 @@ const Game = () => {
     { id: playerId, name: loser ?? "", points: loser ? scores[loser] || 0 : 0 },
   ]);
   const [playersReady, setPlayersReady] = useState<string[] | null>([]);
+  const [color, setColor] = useState("#ffffff");
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [wordGuess, setWordGuess] = useState("");
+  const [showGuessButton, setShowGuessButton] = useState(false);
+  const [countLetters, setCountLetters] = useState(0);
 
   useEffect(() => {
     if (!userId) return;
@@ -38,6 +45,11 @@ const Game = () => {
     setSocket(newSocket);
 
     newSocket.emit('register', userId);
+
+    const storedRoomId = sessionStorage.getItem('roomId');
+    if (storedRoomId) {
+      setRoomId(storedRoomId);
+    }
 
     if (roomId !== null) {
       newSocket.emit('joinRoom', { roomId, userId });
@@ -62,6 +74,9 @@ const Game = () => {
       setRandomWord(word);
       // Masquer les lettres du mot avec des underscores
       setHiddenWord("_ ".repeat(word.length).trim())
+
+      // Calculer le nombre de lettres du mot
+      setCountLetters(word.length);
     });
 
     newSocket.on('gameStarted', ({ word }) => {
@@ -81,9 +96,10 @@ const Game = () => {
       }
     });
 
-    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord }) => {
+    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord, showGuessButton }) => {
       setHiddenWord(updatedHiddenWord);
       setStartingPlayer(playerId);
+      setShowGuessButton(showGuessButton);
     });
 
     newSocket.on('gameWon', ({ winner, word, looser, scores }) => {
@@ -102,6 +118,7 @@ const Game = () => {
       // Mettre à jour l'état pour finir le jeu
       setIsGameStarted(false);
       setGuessedLetters([]);
+      setShowGuessButton(false);
     });
 
     newSocket.on('letterAlreadyGuessed', ({ letter }) => {
@@ -165,6 +182,7 @@ const Game = () => {
       }
 
       setGuessedLetters([]);
+      setShowGuessButton(false);
 
     });
 
@@ -214,6 +232,7 @@ const Game = () => {
   const joinGame = (gameId: any, userId: string|null) => {
     setRoomId(gameId);
     setPlayerId(userId);
+    sessionStorage.setItem('roomId', gameId);
   };
 
   // Afficher les lettres déjà jouées (barrées)
@@ -243,6 +262,10 @@ const Game = () => {
 
   }, [startingPlayer, gameEndMessage, isGameStarted]);
 
+  useEffect(() => {
+    setColor(theme === 'dark' ? '#ffffff' : '#000000');
+  }, [theme]);
+
   const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     setLetter(event.target.value.toUpperCase()); // Enregistrer la lettre en majuscule
   };
@@ -270,6 +293,7 @@ const Game = () => {
   }
 
   const handleExitGame = () => {
+    sessionStorage.removeItem('roomId');
     const modal = document.getElementById('my_modal_1');
     if (modal) {
       modal.close(); // Fermer le modal
@@ -290,12 +314,37 @@ const Game = () => {
     socket.emit('playerWantsReplay', { playerId, roomId });
   }
 
+  const guessedWordModal = () => {
+    const modal = document.getElementById('my_modal_2');
+    if (modal) {
+      modal.showModal()
+    }
+  }
+
+  const guessedWord = (wordGuess) => {
+    console.log("Mot deviné:", wordGuess);
+    socket.emit('submitWordGuess', { roomId, playerId, wordGuess });
+    const modal = document.getElementById('my_modal_2');
+    if (modal) {
+      modal.close()
+    }
+    // setWordGuess("");
+  }
+
   return (
     <div>
+      <Particles
+        key={color}
+        className="absolute inset-0 z-0"
+        quantity={100}
+        ease={80}
+        color={color}
+        refresh
+      />
       {isLoading ? (
         <div className="card">
           <div className="title">
-            <h2>Parties disponibles</h2>
+            <SparklesText text="Parties disponibles" />
             <button className="refresh" onClick={refreshGameList}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
@@ -309,7 +358,9 @@ const Game = () => {
       ) : !roomId ? (
         <div className="card">
           <div className="title">
-            <h2>Parties disponibles</h2>
+            <SparklesText text="Parties disponibles" 
+            sparklesCount={10}
+            colors={{ first: '#65aa5e', second: '#FE8BBB' }} />
             <button className="refresh" onClick={refreshGameList}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"></path>
@@ -322,14 +373,15 @@ const Game = () => {
             <ul>
               {games.map((game: any) => (
                 <li className="card game" key={game.id}>
+                  <BorderBeam />
                   <p className="description">Partie {game.id}</p>
                   <p className="by">Créée par {game.creator}</p>
-                  <button className="join" onClick={() => joinGame(game.id, userId)}>Rejoindre</button>
+                  <InteractiveHoverButton className="join" onClick={() => joinGame(game.id, userId)}>Rejoindre</InteractiveHoverButton>
                 </li>
               ))}
             </ul>
           )}
-          <button className="create" onClick={createGame}>Créer une partie</button>
+          <PulsatingButton className="create" onClick={createGame}>Créer une partie</PulsatingButton>
         </div>
       ) : roomId && !isGameStarted && 
       <div className="card">
@@ -415,33 +467,25 @@ const Game = () => {
         </div>
       )}
 
-    <div>
-      <NewGameWaiting 
-        isLoading={isLoading} 
-        playersReady={playersReady}
-        setPlayersReady={setPlayersReady}
-      />
-    </div>
-
-      {isGameStarted && (
+        {isGameStarted && (
         <div className="card">
-          <h2>Vous êtes le joueur {playerId}</h2>
-          {isChoosing ? (
-            <div className="flex justify-center items-center">
-              <span className="loading loading-ring loading-lg"></span>
-            </div>
-          ) : (
-            startingPlayer && (
-              <p>{startingPlayer} commence</p>
-            )
-          )}
-          {message && <p className="text-lg mt-2">{message}</p>}
-          <p className="text-2xl font-bold mt-4">Mot à deviner {hiddenWord}</p>
-          {renderGuessedLetters()}
-  
-          {startingPlayer === playerId && (
-            <div>
-              <input 
+        <h2>Vous êtes le joueur {playerId}</h2>
+        {isChoosing ? (
+          <div className="flex justify-center items-center">
+            <span className="loading loading-ring loading-lg"></span>
+          </div>
+        ) : (
+          startingPlayer && (
+            <p>{startingPlayer} commence</p>
+          )
+        )}
+        {message && <p className="text-lg mt-2">{message}</p>}
+        <p className="text-2xl font-bold mt-4">Mot à deviner {hiddenWord}</p>
+        {renderGuessedLetters()}
+
+        {startingPlayer === playerId && (
+          <div>
+            <input 
                 type="text" 
                 value={letter} 
                 onChange={handleLetterInput} 
@@ -451,10 +495,33 @@ const Game = () => {
                 className="input"
               />
               <button onClick={submitLetter} className="btn">Soumettre la lettre</button>
-            </div>
-          )}
-        </div>
-      )}
+              { showGuessButton ? (
+                <>
+                <dialog id="my_modal_2" className="modal">
+                  <div className="modal-box">
+                    <h3 className="font-bold text-lg">Devinez le mot</h3>
+                    <h4>Attention !</h4>
+                    <p>Si vous décidez de deviner le mot, vous ne pourrez plus proposer de lettres pendant 2 tours.</p>
+                    <p>Il y a {countLetters} lettres dans le mot.</p>
+                    <input type="text" placeholder="Entrez le mot" className="input" value={wordGuess} onChange={(e) => setWordGuess(e.target.value)} />
+                    <button className="btn" onClick={() => guessedWord(wordGuess)}>Soumettre</button>
+                  </div>
+                </dialog>
+                <button className="btn" onClick={guessedWordModal}>Devinez le mot</button>
+                </>
+              ) : null }
+          </div>
+        )}
+        <button className="exit" onClick={handleExitGame}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 15.75 3 12m0 0 3.75-3.75M3 12h18" />
+          </svg>
+          Quitter la partie
+        </button>
+
+      </div>
+    )}
+
     </div>
   );  
 };
