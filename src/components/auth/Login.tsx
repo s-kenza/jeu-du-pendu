@@ -26,7 +26,7 @@ const BasicForm = () => {
       if (response.ok && data.token) {
         // 2. Si la connexion est réussie, obtenir le token
         const token = data.token;
-        
+  
         // 3. Vérifier les utilisateurs via la route GET /users
         const userResponse = await fetch('http://localhost:3000/users', {
           method: 'GET',
@@ -35,35 +35,42 @@ const BasicForm = () => {
           },
         });
         const usersData = await userResponse.json();
-        
+  
         if (userResponse.ok) {
           // 4. Chercher l'utilisateur en utilisant l'email et le mot de passe
-          const currentUser = usersData.find((user: any) => 
+          const currentUser = usersData.find((user: any) =>
             user.email === values.email
-        );
-        
-        console.log(currentUser)
-        
-        if (currentUser) {
-            // 5. Stocker l'`userId` dans le sessionStorage
-            login(token, currentUser.id);  // Connecter l'utilisateur avec le token
-            navigate('/game', { state: { message: 'Vous êtes connecté' } });
+          );
+  
+          console.log(currentUser);
+  
+          if (currentUser) {
+            // Vérifier si le mot de passe est correct
+            if (currentUser) {
+              // 5. Stocker l'`userId` dans le sessionStorage
+              login(token, currentUser.id);  // Connecter l'utilisateur avec le token
+              navigate('/game', { state: { message: 'Vous êtes connecté' } });
+            } else {
+              setErrorMessage('Mot de passe incorrect.');
+            }
           } else {
-            setErrorMessage('Utilisateur ou mot de passe incorrect');
+            setErrorMessage('Utilisateur non trouvé.');
           }
         } else {
           setErrorMessage('Impossible de récupérer les utilisateurs.');
         }
       } else {
-        setErrorMessage(data.error || 'Une erreur est survenue');
+        setErrorMessage('Email ou mot de passe incorrect.');
       }
     } catch (error) {
-      console.error("Erreur lors de la connexion :", error);
+      console.error('Erreur lors de la connexion :', error);
       setErrorMessage('Erreur réseau. Veuillez réessayer plus tard.');
     } finally {
       setSubmitting(false);
     }
   };
+  
+  
 
   return (
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
@@ -80,6 +87,7 @@ const BasicForm = () => {
           >
             {({ isSubmitting }) => (
               <Form className="px-5 py-7">
+                { errorMessage && <div className="text-red-500 text-center">{errorMessage}</div> }
                 <Field name="email" label="E-mail" component={CustomInputComponent} />
                 <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 

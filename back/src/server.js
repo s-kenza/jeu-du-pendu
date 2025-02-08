@@ -208,8 +208,6 @@ app.io.on("connection", (socket) => {
 			});
 	
 			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players: players.players, scores, wordGuessed: room.wordGuessed });
-			
-			console.log(`roomState`, roomState);
 		}
 	});	
 
@@ -218,7 +216,7 @@ app.io.on("connection", (socket) => {
 		app.io.to(roomId).emit('gameStarted', { word });
 	});
 
-	socket.on('submitLetter', async ({ roomId, playerId, letter }) => {
+	socket.on('submitLetter', async ({ roomId, playerId, letter, penalties, playerIdPenalized }) => {
 		const word = roomWords.get(roomId);
 		if(!word) return;
 
@@ -227,6 +225,7 @@ app.io.on("connection", (socket) => {
 
 		let otherPlayer;
 		let looser;
+		let figure = 0;
 		let { wordToGuess, hiddenWord, guessedLetters } = room;
 
 		console.log(`Lettre ${letter} envoyée par ${playerId} dans la room ${roomId}`)
@@ -259,7 +258,7 @@ app.io.on("connection", (socket) => {
 			room.hiddenWord = hiddenWord; // Mettre à jour l'état de la room avec le nouveau mot caché
 	
 			const remainingLetters = countRemainingLetters(hiddenWord);
-			const showGuessButton = remainingLetters < 8;
+			const showGuessButton = remainingLetters < 6;
 
 			// Vérifier si le mot est complètement trouvé
 			const isWordGuessed = hiddenWord.replace(/ /g, '').toLowerCase() === wordToGuess.toLowerCase();
@@ -297,25 +296,58 @@ app.io.on("connection", (socket) => {
 				}
 				app.io.to(roomId).emit('gameEnded', { winner: playerId, scores: room.scores });
 			} else {
+				// Vérifier si le joueur a une pénalité
+				if (penalties && penalties[playerIdPenalized] > 0) {
+					console.log(`Pénalité restante pour ${playerIdPenalized} : ${penalties[playerIdPenalized]}`);
+					penalties[playerIdPenalized] -= 1;
+
+					// Si la pénalité n'est pas encore terminée, garder la main au joueur actuel
+					if (penalties[playerIdPenalized] > 0) {
+						otherPlayer = {};
+						otherPlayer.userId = playerId;
+			
+
+					}
+				} else
 				// Si le mot n'est pas encore trouvé, donner la main à l'autre joueur
-				console.log(`room`, room);
 				if (Array.isArray(room.players)) {
 					otherPlayer = room.players.find(player => player.socketId !== socket.id);
+		
+					
 				} else if (room.players && Array.isArray(room.players.players)) {
 					otherPlayer = room.players.players.find(player => player.socketId !== socket.id);
+		
 				}
-				app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton });
+	
+				figure += 1;
+				app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton, figure: figure });
 			}
 		} else {
+			// Vérifier si le joueur a une pénalité
+			if (penalties && penalties[playerIdPenalized] > 0) {
+				console.log(`Pénalité restante pour ${playerIdPenalized} : ${penalties[playerIdPenalized]}`);
+				penalties[playerIdPenalized] -= 1;
+
+				// Si la pénalité n'est pas encore terminée, garder la main au joueur actuel
+				if (penalties[playerIdPenalized] > 0) {
+					otherPlayer = {};
+					otherPlayer.userId = playerId;
+		
+				}
+			} else
 			// Si la lettre n'est pas dans le mot, passer à l'autre joueur
 			if (Array.isArray(room.players)) {
 				otherPlayer = room.players.find(player => player.socketId !== socket.id);
+	
 			} else if (room.players && Array.isArray(room.players.players)) {
 				otherPlayer = room.players.players.find(player => player.socketId !== socket.id);
+	
 			}
 			const remainingLetters = countRemainingLetters(hiddenWord);
         	const showGuessButton = remainingLetters <= 3 && remainingLetters > 0;
-			app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton });
+			figure += 1;
+
+			app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton, figure: figure });
 		}
 
 		// Envoyer l'événement 'letterGuessed' à tous les joueurs pour qu'ils mettent à jour leurs lettres devinées
@@ -396,9 +428,13 @@ app.io.on("connection", (socket) => {
 		console.log('roomState:', roomState);
 	});
 	
-	socket.on('submitWordGuess', async ({ roomId, playerId, wordGuess }) => {
+	socket.on('submitWordGuess', async ({ roomId, playerId, wordGuess }) => {		
 		const room = roomState.get(roomId);
 		if (!room) return;
+
+		if (!room.penalties) {
+			room.penalties = {};
+		}
 
 		let looser;
 
@@ -441,11 +477,13 @@ app.io.on("connection", (socket) => {
 			app.io.to(roomId).emit('gameWon', { winner: playerId, looser: looser, word: wordToGuess, scores: room.scores });
 			app.io.to(roomId).emit('gameEnded', { winner: playerId, scores: room.scores });
 		} else {
-			// Si le mot n'est pas correct, passer la main à l'autre joueur
+			// Si le mot n'est pas correct, passer la main à l'autre joueur et lui affliger une pénalité
+			room.penalties[playerId] = 3;
+			const playerIdPenalized = playerId;
 			const otherPlayer = room.players.find(player => player.socketId !== socket.id);
 			const remainingLetters = countRemainingLetters(hiddenWord);
-			const showGuessButton = remainingLetters <= 3 && remainingLetters > 0;
-			app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton });
+			const showGuessButton = false;
+			app.io.to(roomId).emit('nextTurn', { playerId: otherPlayer.userId, updatedHiddenWord: hiddenWord, showGuessButton: showGuessButton, penalties: room.penalties, playerIdPenalized });
 		}
 	});
 

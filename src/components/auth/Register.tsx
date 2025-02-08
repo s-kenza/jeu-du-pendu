@@ -30,7 +30,7 @@ const BasicForm = () => {
         navigate('/login', { state: { message: 'Inscription réussie. Veuillez vérifier votre email.' } });
       } else {
         setError(true);
-        setErrorMessage(data.error || 'Une erreur est survenue');
+        setErrorMessage("Ce compte existe déjà.");
         setLoading(false);
       }
     } catch (error) {

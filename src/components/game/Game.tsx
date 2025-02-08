@@ -7,6 +7,12 @@ import { Particles } from "../particles.tsx";
 import { SparklesText } from "../sparkles-text.tsx";
 import { InteractiveHoverButton } from "../interactive-hover-button.tsx";
 import { PulsatingButton } from "../pulsating-button.tsx"
+import ToastNotification from "../auth/ToastNotification.tsx";
+import { BoxReveal } from "../magicui/box-reveal.tsx";
+import ColourfulText from "../ui/colourful-text.tsx";
+import { TypingAnimation } from "../magicui/typing-animation.tsx";
+import { AuroraText } from "../magicui/aurora-text.tsx";
+import { Ripple } from "../magicui/ripple.tsx";
 
 const Game = () => {
   const [socket, setSocket] = useState<any>(null);
@@ -28,8 +34,8 @@ const Game = () => {
   const [loser, setLoser] = useState<string | null>(null);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [players, setPlayers] = useState([
-    { id: playerId, name: winner ?? "", points: winner ? scores[winner] || 0 : 0 },
-    { id: playerId, name: loser ?? "", points: loser ? scores[loser] || 0 : 0 },
+    { id: playerId, name: winner, points: winner ? scores[winner] || 0 : 0 },
+    { id: playerId, name: loser, points: loser ? scores[loser] || 0 : 0 },
   ]);
   const [playersReady, setPlayersReady] = useState<string[] | null>([]);
   const [color, setColor] = useState("#ffffff");
@@ -37,6 +43,10 @@ const Game = () => {
   const [wordGuess, setWordGuess] = useState("");
   const [showGuessButton, setShowGuessButton] = useState(false);
   const [countLetters, setCountLetters] = useState(0);
+  const [penalties, setPenalties] = useState(0);
+  const [playerIdPenalized, setPlayerIdPenalized] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [nextPlayerId , setNextPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!userId) return;
@@ -47,8 +57,9 @@ const Game = () => {
     newSocket.emit('register', userId);
 
     const storedRoomId = sessionStorage.getItem('roomId');
-    if (storedRoomId) {
+    if (storedRoomId && players.length === 2 ) {
       setRoomId(storedRoomId);
+      setIsGameStarted(true);
     }
 
     if (roomId !== null) {
@@ -65,6 +76,7 @@ const Game = () => {
       console.log(`Le joueur qui commence est : ${startingPlayer}`);
       setStartingPlayer(startingPlayer);
       setIsChoosing(false); // Arrêter l'animation
+      setIsGameStarted(true);
     });
 
     newSocket.on('gameStart', ({ roomId, word }) => {
@@ -77,11 +89,15 @@ const Game = () => {
 
       // Calculer le nombre de lettres du mot
       setCountLetters(word.length);
+
+      setPlayers([
+        { id: playerId, name: playerId, points: 0 },
+        { id: playerId, name: playerId, points: 0 }
+      ])
     });
 
     newSocket.on('gameStarted', ({ word }) => {
       setRandomWord(word);
-      setDisplayWord('_ '.repeat(word.length)); // Afficher les underscores
       setIsGameStarted(true);
     });
 
@@ -96,10 +112,15 @@ const Game = () => {
       }
     });
 
-    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord, showGuessButton }) => {
+    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord, showGuessButton, penalties, playerIdPenalized }) => {
       setHiddenWord(updatedHiddenWord);
       setStartingPlayer(playerId);
       setShowGuessButton(showGuessButton);
+      setPenalties(penalties);
+      setPlayerIdPenalized(playerIdPenalized);
+      setNextPlayerId(playerId);
+      console.log("Penalités:", penalties);
+      console.log("Joueur pénalisé:", playerIdPenalized);
     });
 
     newSocket.on('gameWon', ({ winner, word, looser, scores }) => {
@@ -122,7 +143,7 @@ const Game = () => {
     });
 
     newSocket.on('letterAlreadyGuessed', ({ letter }) => {
-      alert(`La lettre ${letter} a déjà été devinée.`);
+      letterAlreadyGuessed(letter);
     });
 
     newSocket.on('letterGuessed', ({ letter }) => {
@@ -211,6 +232,9 @@ const Game = () => {
   };
 
   const createGame = async () => {
+    setIsLoading(true);
+
+    setTimeout(async () => {
     const token = sessionStorage.getItem('authToken');
     try {
       const response = await fetch('http://localhost:3000/game', {
@@ -224,23 +248,36 @@ const Game = () => {
       const newGame = await response.json();
       console.log("Nouvelle partie créée:", newGame);
       setRoomId(newGame.gameId);
+      sessionStorage.setItem('roomId', newGame.gameId);
     } catch (error) {
       console.error("Erreur lors de la création de la partie:", error);
     }
-  };
+    setIsLoading(false);
+  }, 1500)};
 
   const joinGame = (gameId: any, userId: string|null) => {
-    setRoomId(gameId);
-    setPlayerId(userId);
     sessionStorage.setItem('roomId', gameId);
-  };
+    setIsLoading(true);
+    setTimeout(() => {
+      setPlayerId(userId);
+      setRoomId(gameId);
+      setIsLoading(false);
+    }, 1500);
+};
+
+  const letterAlreadyGuessed = (letter: string) => {
+    return (
+      <div className="alert alert-error">La lettre {letter} a déjà été devinée.</div>
+    )
+  }
 
   // Afficher les lettres déjà jouées (barrées)
   const renderGuessedLetters = () => {
     return (
       <div>
         {guessedLetters.map((letter, idx) => (
-          <span key={idx} style={{ textDecoration: 'line-through' }}>{letter} </span>
+          // <span className="letter" key={idx} style={{ textDecoration: 'line-through' }}>{letter} </span>
+          <kbd key={idx} className="kbd" style={{ textDecoration: 'line-through' }}>{letter}</kbd>
         ))}
       </div>
     );
@@ -248,11 +285,8 @@ const Game = () => {
 
   useEffect(() => {
     const modal = document.getElementById('my_modal_1');
-
-    if (startingPlayer) {
-      // Quand le joueur qui commence est défini, afficher le message
-      setMessage(`${startingPlayer}, c'est à toi de commencer ! Renseigne une lettre.`);
-    }
+    
+    setMessage(`Renseigne une lettre pour tenter de deviner le mot !`);
 
     if (gameEndMessage && !isGameStarted) {
       if (modal) {
@@ -267,17 +301,27 @@ const Game = () => {
   }, [theme]);
 
   const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setLetter(event.target.value.toUpperCase()); // Enregistrer la lettre en majuscule
+    const value = event.target.value.toUpperCase();
+    // Vérifier si c'est une seule lettre entre A et Z
+    if (/^[A-Z]$/.test(value)) {
+      setLetter(value);
+    } else {
+      setToastMessage("Veuillez entrer une seule lettre entre A et Z.");
+    }
   };
 
   const submitLetter = () => {
+    if (!letter) {
+      setToastMessage("Veuillez entrer une lettre.");
+      return;
+    }
     if (guessedLetters.includes(letter)) {
       alert(`La lettre ${letter} a déjà été devinée.`); // Alerte avant d'envoyer
       return;
     }
   
     // Envoyer la lettre au serveur
-    socket.emit('submitLetter', { roomId, playerId, letter });
+    socket.emit('submitLetter', { roomId, playerId, letter, penalties, playerIdPenalized });
   
     // Ajout de la lettre localement pour la prochaine mise à jour (mais uniquement après la réponse serveur)
     setGuessedLetters((prevGuessedLetters) => [...prevGuessedLetters, letter]);
@@ -293,6 +337,7 @@ const Game = () => {
   }
 
   const handleExitGame = () => {
+    setIsGameStarted(false);
     sessionStorage.removeItem('roomId');
     const modal = document.getElementById('my_modal_1');
     if (modal) {
@@ -301,9 +346,27 @@ const Game = () => {
     setIsLoading(true); // Activer le chargement
     setTimeout(() => {
       setRoomId(null);
-      setIsGameStarted(false);
       fetchGames(); // Mettre à jour la liste des parties
       setGuessedLetters([]); // Réinitialiser les lettres devinées
+      setIsGameStarted(false);
+      setGameEndMessage('');
+      setStartingPlayer(null);
+      setRandomWord(null);
+      setMessage(null);
+      setHiddenWord('');
+      setLetter('');
+      setWinner(null);
+      setLoser(null);
+      setScores({});
+      setPlayers([]);
+      setPlayersReady([]);
+      setPenalties(0);
+      setPlayerIdPenalized(null);
+      setToastMessage(null);
+      setNextPlayerId(null);
+      setWordGuess("");
+      setShowGuessButton(false);
+      setCountLetters(0);
     }, 1500); // Temps simulé pour l'actualisation
   };
 
@@ -330,6 +393,8 @@ const Game = () => {
     }
     // setWordGuess("");
   }
+
+  console.log("isGameStarted:", isGameStarted);
 
   return (
     <div>
@@ -368,14 +433,26 @@ const Game = () => {
             </button>
           </div>
           {games.length === 0 ? (
-            <p>Aucune partie n'est disponible. Vous pouvez en créer une.</p>
+            <div className="mb-6 mt-6">
+              <BoxReveal>
+                <p className="mb-6 mt-6 text-xl">Aucune partie n'est disponible. Vous pouvez en créer une.</p>
+              </BoxReveal>
+            </div>
           ) : (
             <ul>
               {games.map((game: any) => (
                 <li className="card game" key={game.id}>
                   <BorderBeam />
-                  <p className="description">Partie {game.id}</p>
-                  <p className="by">Créée par {game.creator}</p>
+                  <p className="description">Partie créée par 
+                    <div className="creator">
+                      <ColourfulText text={game.creator} />
+                    </div>
+                    </p>
+                  <p className="by">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                    </svg>
+                  Pour 2 joueurs</p>
                   <InteractiveHoverButton className="join" onClick={() => joinGame(game.id, userId)}>Rejoindre</InteractiveHoverButton>
                 </li>
               ))}
@@ -470,41 +547,85 @@ const Game = () => {
         {isGameStarted && (
         <div className="card">
         <h2>Vous êtes le joueur {playerId}</h2>
-        {isChoosing ? (
-          <div className="flex justify-center items-center">
-            <span className="loading loading-ring loading-lg"></span>
-          </div>
-        ) : (
-          startingPlayer && (
-            <p>{startingPlayer} commence</p>
-          )
+        {isChoosing && (
+        <div className="flex justify-center items-center">
+          <span className="loading loading-ring loading-lg"></span>
+        </div>
         )}
-        {message && <p className="text-lg mt-2">{message}</p>}
-        <p className="text-2xl font-bold mt-4">Mot à deviner {hiddenWord}</p>
+
+        {startingPlayer === playerId && (
+          <div className="flex justify-center items-center flex-col">
+            {guessedLetters.length === 0 && (
+              <p className="text-lg mt-2">C'est à toi de commencer !</p>
+            )}
+            <p className="text-lg mt-2">{message}</p>
+          </div>
+          )}
+        
+        {startingPlayer !== playerId && isGameStarted && (
+          <div className="flex justify-center items-center">
+            <p>Attends que {startingPlayer} joue !</p>
+            <div className="flex justify-center items-center">
+              <span className="loading loading-ring loading-lg"></span>
+            </div>
+          </div>
+        )}
+        <div className="hidden-word">
+          <TypingAnimation>Mot à deviner</TypingAnimation>
+          <p className="text-2xl font-bold mt-4">{hiddenWord}</p>
+        </div>
         {renderGuessedLetters()}
 
         {startingPlayer === playerId && (
-          <div>
+          <div className="flex justify-center items-center mt-4">
             <input 
                 type="text" 
                 value={letter} 
                 onChange={handleLetterInput} 
-                onKeyDown={(e) => e.key === 'Enter' && submitLetter()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && letter) {
+                    submitLetter();
+                  } else if (e.key === 'Enter' && !letter) {
+                    setToastMessage("Veuillez entrer une lettre.");
+                  }
+                }}
                 maxLength={1} 
                 placeholder="Entrez une lettre" 
                 className="input"
               />
+              <ToastNotification message={toastMessage} setMessage={setToastMessage} />
               <button onClick={submitLetter} className="btn">Soumettre la lettre</button>
               { showGuessButton ? (
                 <>
                 <dialog id="my_modal_2" className="modal">
-                  <div className="modal-box">
-                    <h3 className="font-bold text-lg">Devinez le mot</h3>
-                    <h4>Attention !</h4>
-                    <p>Si vous décidez de deviner le mot, vous ne pourrez plus proposer de lettres pendant 2 tours.</p>
-                    <p>Il y a {countLetters} lettres dans le mot.</p>
-                    <input type="text" placeholder="Entrez le mot" className="input" value={wordGuess} onChange={(e) => setWordGuess(e.target.value)} />
-                    <button className="btn" onClick={() => guessedWord(wordGuess)}>Soumettre</button>
+                  <div className="modal-box flex flex-col overflow-hidden items-center justify-center text-center"> 
+                    <Ripple mainCircleSize={210} mainCircleOpacity={0.25} />
+                    <h1 className="font-bold text-6xl ">Devinez le mot</h1>
+                    <h2>⚠️ Attention</h2>
+                    <p>Si vous décidez de deviner le mot, vous ne pourrez plus proposer de lettres pendant <strong className="text-2xl">2 tours</strong>.</p>
+                    <br/>
+                    <p>Vous n'avez droit qu'à deviner un mot 
+                    <div className="badge badge-primary mx-2 font-medium">une fois par partie</div>
+                    </p>
+                    <br/>
+                    <div className="flex items-center justify-center gap-2 p-8 bg-base-200 rounded-lg">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        className="stroke-info h-6 w-6 shrink-0">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                    <p>Il y a <strong>{countLetters} lettres</strong> dans le mot.</p>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 mt-4">
+                      <input type="text" placeholder="Entrez le mot" className="input border border-base-300 rounded-lg " value={wordGuess} onChange={(e) => setWordGuess(e.target.value)} />
+                      <button className="btn" onClick={() => guessedWord(wordGuess)}>Soumettre</button>
+                    </div>
                   </div>
                 </dialog>
                 <button className="btn" onClick={guessedWordModal}>Devinez le mot</button>

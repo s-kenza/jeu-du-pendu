@@ -38,9 +38,16 @@ button.create {
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    background: #1651cf;
     justify-content: center;
     margin-top: 1em;
+}
+
+[data-theme='dark'] button.create {
+    background: #1651cf;
+}
+
+[data-theme='light'] button.create {
+    background: #1a71fc;
 }
 
 button.exit {
@@ -53,9 +60,16 @@ button.exit {
     font-size: 1rem;
     font-weight: 700;
     cursor: pointer;
-    background: #c51d1d;
     justify-content: center;
     margin-top: 1em;
+}
+
+[data-theme='dark'] button.exit {
+    background: #c51d1d;
+}
+
+[data-theme='light'] button.exit {
+    background: #ec2525;
 }
 
 button.refresh {
@@ -72,10 +86,17 @@ button.refresh:hover {
 }
 
 button.join {
-    background: #009d0b;
     border: none;
     padding-left: 2rem;
     padding-right: 2rem;
+}
+
+[data-theme='dark'] button.join {
+    background: #009d0b;
+}
+
+[data-theme='light'] button.join {
+    background: #07ce14;
 }
 
 [data-theme='light'] .alert {
@@ -95,10 +116,19 @@ button.join {
     justify-content: center;
     align-items: center;
     padding: 1rem;
+    padding-left: 5rem;
+    padding-right: 5rem;
     border-radius: 0.5rem;
     margin: 1rem;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    background: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='light'] .card.game {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme='dark'] .card.game {
+    background: rgba(0, 0, 0, 0.3);
 }
 
 .card .title {
@@ -157,20 +187,73 @@ button.join {
     z-index: 9999; /* Un nombre élevé pour passer au-dessus */
 }
 
+.creator {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+[data-theme='dark'] .creator, [data-theme='dark'] .hidden-word, [data-theme='dark'] .letter {
+    background: rgb(27, 26, 29);
+}
+
+[data-theme='light'] .creator, [data-theme='light'] .hidden-word, [data-theme='light'] .letter {
+    background: rgb(234, 227, 227);
+}
+
 p.description {
     font-size: 1.2rem;
     font-weight: 500;
     margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .by {
     font-size: 1rem;
     font-weight: 400;
     margin-bottom: 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hidden-word {
+    padding: 2rem;
+    border-radius: 0.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    margin: 1rem;
+}
+
+.letter {
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.alert {
+    /* background : rgb(41, 71, 207) !important;
+    opacity: 1 !important; */
 }
 
 @layer base {
   :root {
         --radius: 0.5rem;
+        --color-1: 0 100% 63%;
+        --color-2: 270 100% 63%;
+        --color-3: 210 100% 63%;
+        --color-4: 195 100% 63%;
+        --color-5: 90 100% 63%;
+    }
+  .dark {
+        --color-1: 0 100% 63%;
+        --color-2: 270 100% 63%;
+        --color-3: 210 100% 63%;
+        --color-4: 195 100% 63%;
+        --color-5: 90 100% 63%;
     }
 }
