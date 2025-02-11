@@ -51,8 +51,8 @@ const BasicForm = () => {
 
         if (userResponse.ok) {
           const userData = await userResponse.json();
+          console.log('userData:', userData); // Log des données utilisateur
           const currentUser = userData.find((user: any) => user.email === values.email);
-
           console.log('currentUser:', currentUser); // Log de l'utilisateur
 
           if (currentUser) {
