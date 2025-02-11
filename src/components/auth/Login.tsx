@@ -6,6 +6,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLocation } from 'react-router-dom';
 import ToastNotification from './ToastNotification';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  id: string;
+  username: string;
+}
 
 const BasicForm = () => {
   const navigate = useNavigate();
@@ -31,36 +37,19 @@ const BasicForm = () => {
       
       const data = await response.json();
       console.log("Réponse du serveur:", data); // Log de la réponse
-      console.log("token", data.token); // Log du token
       
       if (!response.ok) {
         console.log("Status:", response.status); // Log du status
-        throw new Error(data.error || 'Erreur serveur');
       }
       
       if (data.token) {
-        // Vérification supplémentaire de l'utilisateur (comme avant)
-        const userResponse = await fetch(`${API_URL}/users`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${data.token}`,
-          },
-        });
-        console.log("userResponse:", userResponse); // Log de la réponse
+        
+        const decoded = jwtDecode<DecodedToken>(data.token);
 
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          console.log('userData:', userData); // Log des données utilisateur
-          const currentUser = userData.find((user: any) => user.email === values.email);
-          console.log('currentUser:', currentUser); // Log de l'utilisateur
-
-          if (currentUser) {
-            login(data.token, currentUser.id);
+        if (decoded != null) {
+            login(data.token, decoded.id);
             navigate('/game', { state: { message: 'Vous êtes connecté' } });
-          } else {
             throw new Error('Utilisateur non trouvé');
-          }
         } else {
           throw new Error("Impossible de vérifier l'utilisateur");
         }

@@ -236,15 +236,20 @@ const Game = () => {
         },
       });
   
+      console.log('response', response);
       const data = await response.json();
+      console.log('data', data);
       const userId = sessionStorage.getItem('userId'); // Assure-toi que l'ID utilisateur est stocké dans sessionStorage
-  
+      console.log('userId', userId);
+
       const filteredGames = data.filter((game: any) => {
         return (
           game.state === 'pending' ||
           (game.state === 'playing' && !game.winner && (game.firstPlayer === userId || game.secondPlayer === userId))
         );
       });
+
+      console.log('filteredGames', filteredGames);
   
       setGames(filteredGames);
       setIsLoading(false);
