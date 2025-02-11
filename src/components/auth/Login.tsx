@@ -1,79 +1,104 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
-import { useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom';
+import ToastNotification from './ToastNotification';
 
 const BasicForm = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState('');
+  const [error, setError] = useState<boolean>(false);
   const { login } = useAuth();
+  const location = useLocation();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-  const handleSubmit = async (values: any, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values: any, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
-      // 1. Effectuer la requête de connexion avec l'email et le mot de passe
-      const response = await fetch('http://localhost:3000/login', {
+      console.log("Envoi des données:", values); // Log des données envoyées
+  
+      const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
       });
+  
       const data = await response.json();
-      console.log(data);
+      console.log("Réponse du serveur:", data); // Log de la réponse
   
-      if (response.ok && data.token) {
-        // 2. Si la connexion est réussie, obtenir le token
-        const token = data.token;
+      if (!response.ok) {
+        console.log("Status:", response.status); // Log du status
+        throw new Error(data.error || 'Erreur serveur');
+      }
   
-        // 3. Vérifier les utilisateurs via la route GET /users
-        const userResponse = await fetch('http://localhost:3000/users', {
+      if (data.token) {
+        // Vérification supplémentaire de l'utilisateur (comme avant)
+        const userResponse = await fetch(`${API_URL}/users`, {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${token}`, // Passer le token pour vérifier l'utilisateur
+            'Authorization': `Bearer ${data.token}`,
           },
         });
-        const usersData = await userResponse.json();
-  
+
         if (userResponse.ok) {
-          // 4. Chercher l'utilisateur en utilisant l'email et le mot de passe
-          const currentUser = usersData.find((user: any) =>
-            user.email === values.email
-          );
-  
-          console.log(currentUser);
-  
+          const userData = await userResponse.json();
+          const currentUser = userData.find((user: any) => user.email === values.email);
+
           if (currentUser) {
-            // Vérifier si le mot de passe est correct
-            if (currentUser) {
-              // 5. Stocker l'`userId` dans le sessionStorage
-              login(token, currentUser.id);  // Connecter l'utilisateur avec le token
-              navigate('/game', { state: { message: 'Vous êtes connecté' } });
-            } else {
-              setErrorMessage('Mot de passe incorrect.');
-            }
+            login(data.token, currentUser.id);
+            navigate('/game', { state: { message: 'Vous êtes connecté' } });
           } else {
-            setErrorMessage('Utilisateur non trouvé.');
+            throw new Error('Utilisateur non trouvé');
           }
         } else {
-          setErrorMessage('Impossible de récupérer les utilisateurs.');
+          throw new Error("Impossible de vérifier l'utilisateur");
         }
-      } else {
-        setErrorMessage('Email ou mot de passe incorrect.');
-      }
-    } catch (error) {
-      console.error('Erreur lors de la connexion :', error);
-      setErrorMessage('Erreur réseau. Veuillez réessayer plus tard.');
+    }
+    } catch (error: any) {
+      console.error('Erreur détaillée:', error);
+      setError(true);
+      setErrorMessage(error.message || 'Erreur réseau. Veuillez réessayer plus tard.');
     } finally {
       setSubmitting(false);
     }
   };
   
-  
+  useEffect(() => {
+    if (location.state?.message) {
+      setToastMessage(location.state.message);
+      navigate(location.pathname, { state: {} });
+    }
+
+    if (error) {
+      const modal = document.getElementById('error_modal');
+      (modal as HTMLDialogElement).showModal();
+    }
+  }, [error]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
+      <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
+      <dialog id="error_modal" className="modal modal-bottom sm:modal-middle">
+      <div className="modal-box">
+        <div role="alert" className="alert alert-error">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span>Oups! Il semblerait qu'il y ait un problème</span>
+        </div>
+        <p className="py-4">{errorMessage}</p>
+        <div className="modal-action">
+          <form method="dialog">
+            <button className="btn" onClick={() => setError(false)}>Fermer</button>
+          </form>
+        </div>
+      </div>
+    </dialog>
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
         <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>  
         <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
@@ -87,7 +112,7 @@ const BasicForm = () => {
           >
             {({ isSubmitting }) => (
               <Form className="px-5 py-7">
-                { errorMessage && <div className="text-red-500 text-center">{errorMessage}</div> }
+                { errorMessage && <div className="text-red-500 text-center mb-4">{errorMessage}</div> }
                 <Field name="email" label="E-mail" component={CustomInputComponent} />
                 <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 
@@ -108,27 +133,28 @@ const BasicForm = () => {
           {/* Boutons additionnels et Liens */}
           <div className="py-5">
             <div className="grid grid-cols-2 gap-1">
-              <div className="text-center sm:text-left whitespace-nowrap">
-                <button
-                  type="button"
-                  className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="w-4 h-4 inline-block align-text-top"
+            <div className="text-center sm:text-right whitespace-nowrap">
+                <Link to="/login">
+                  <button
+                    type="button"
+                    className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span className="inline-block ml-1">Mot de passe oublié ?</span>
-                </button>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor" 
+                      className="w-4 h-4 inline-block align-text-bottom">
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth="2"
+                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                      />
+                    </svg>
+                    <span className='inline-block ml-1'>Pas de compte ? Je m'inscris</span>
+                  </button>
+                </Link>
               </div>
               <div className="text-center sm:text-right whitespace-nowrap">
                 <button
@@ -151,29 +177,6 @@ const BasicForm = () => {
                   </svg>
                   <span className="inline-block ml-1">Aide</span>
                 </button>
-              </div>
-              <div className="text-center sm:text-right whitespace-nowrap">
-                <Link to="/login">
-                  <button
-                    type="button"
-                    className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
-                      className="w-4 h-4 inline-block align-text-bottom">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2"
-                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
-                      />
-                    </svg>
-                    <span className='inline-block ml-1'>Pas de compte ? Je m'inscris</span>
-                  </button>
-                </Link>
               </div>
             </div>
           </div>

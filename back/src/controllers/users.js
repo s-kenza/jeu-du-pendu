@@ -2,6 +2,11 @@ import User from "../models/users.js";
 import { Op } from "sequelize";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import mjml2html from 'mjml';
+import path from 'path';
+import fs from 'fs/promises';
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -139,26 +144,44 @@ export async function loginUser(userDatas, app) {
 	);
 	return { token };
 }
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 async function sendVerificationEmail(user) {
-	let transporter = nodemailer.createTransport({
-	  host: 'localhost',
-	  port: 1025, // Port par défaut de MailCatcher
-	  secure: false,
-	  tls: {
-		rejectUnauthorized: false
-	  }
-	});
-  
-	let info = await transporter.sendMail({
-	  from: '"Votre Application" <noreply@votreapp.com>',
-	  to: user.email,
-	  subject: "Vérification de votre compte",
-	  text: `Bienvenue ${user.firstname} ${user.lastname},\n\nMerci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : http://localhost:5173/verify/${user.verifiedtoken}`,
-	  html: `<p>Bienvenue ${user.firstname} ${user.lastname},</p><p>Merci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : <a href="http://localhost:5173/verify/${user.verifiedtoken}">Vérifier mon compte</a></p>`
-	});
-  
-	console.log("Message sent: %s", info.messageId);
-  }
+  // 1. Définir le template MJML
+  const templatePath = path.join(__dirname, '..', 'templates', 'verification.mjml');
+  let mjmlTemplate = await fs.readFile(templatePath, 'utf-8');
+
+  // Remplacer les variables du template par les valeurs de l'utilisateur
+  mjmlTemplate = mjmlTemplate.replace('${user.firstname}', user.firstname)
+    						.replace('${user.lastname}', user.lastname)
+							.replace('${user.verifiedtoken}', user.verifiedtoken);
+
+  // 2. Convertir MJML en HTML
+  const htmlOutput = mjml2html(mjmlTemplate);
+
+  // 3. Configuration du transporteur comme avant
+  let transporter = nodemailer.createTransport({
+    host: 'localhost',
+    port: 1025,
+    secure: false,
+    tls: {
+      rejectUnauthorized: false
+    }
+  });
+
+  // 4. Envoi de l'email avec le template HTML converti
+  let info = await transporter.sendMail({
+    from: '"Votre Application" <noreply@votreapp.com>',
+    to: user.email,
+    subject: "Vérification de votre compte",
+    text: `Bienvenue ${user.firstname} ${user.lastname},\n\nMerci de vous être inscrit. Veuillez vérifier votre compte en cliquant sur le lien suivant : http://localhost:5173/verify/${user.verifiedtoken}`,
+    html: htmlOutput.html
+  });
+
+  console.log("Message sent: %s", info.messageId);
+}
+
 // Route pour vérifier le compte
 export async function verifyUser(token) {
 	const user = await User.findOne({

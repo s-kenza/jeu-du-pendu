@@ -11,7 +11,6 @@ import ToastNotification from "../auth/ToastNotification.tsx";
 import { BoxReveal } from "../magicui/box-reveal.tsx";
 import ColourfulText from "../ui/colourful-text.tsx";
 import { TypingAnimation } from "../magicui/typing-animation.tsx";
-import { AuroraText } from "../magicui/aurora-text.tsx";
 import { Ripple } from "../magicui/ripple.tsx";
 
 const Game = () => {
@@ -37,7 +36,7 @@ const Game = () => {
     { id: playerId, name: winner, points: winner ? scores[winner] || 0 : 0 },
     { id: playerId, name: loser, points: loser ? scores[loser] || 0 : 0 },
   ]);
-  const [playersReady, setPlayersReady] = useState<string[] | null>([]);
+  const [playersReady, setPlayersReady] = useState<string[]>([]);
   const [color, setColor] = useState("#ffffff");
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   const [wordGuess, setWordGuess] = useState("");
@@ -47,26 +46,39 @@ const Game = () => {
   const [playerIdPenalized, setPlayerIdPenalized] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [nextPlayerId , setNextPlayerId] = useState<string | null>(null);
+  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
   useEffect(() => {
     if (!userId) return;
 
-    const newSocket: any = io("http://localhost:3000");
+    const newSocket: any = io(`${API_URL}`);
     setSocket(newSocket);
 
     newSocket.emit('register', userId);
 
+    console.log(randomWord);
+    console.log(nextPlayerId);
+    console.log(setTheme);
+
     const storedRoomId = sessionStorage.getItem('roomId');
-    if (storedRoomId && players.length === 2 ) {
+    console.log('players length', players.length);
+    console.log('players', players);
+    if (
+      storedRoomId && 
+      players.length === 2 && 
+      players.every(player => player.id !== null && player.id !== undefined)
+    ) {
       setRoomId(storedRoomId);
       setIsGameStarted(true);
     }
+
+    console.log('roomId', roomId);
 
     if (roomId !== null) {
       newSocket.emit('joinRoom', { roomId, userId });
     }
 
-    newSocket.on('roomJoined', ({ roomId, userId }) => {
+    newSocket.on('roomJoined', ({ roomId, userId }: { roomId: string, userId: string }) => {
       console.log(`Rejoint la room ${roomId} en tant que joueur ${userId}`);
       setRoomId(roomId);
       setPlayerId(userId);
@@ -79,7 +91,7 @@ const Game = () => {
       setIsGameStarted(true);
     });
 
-    newSocket.on('gameStart', ({ roomId, word }) => {
+    newSocket.on('gameStart', ({ roomId, word }: { roomId: string, word: string }) => {
       console.log(`La partie a commencé dans la room ${roomId}`);
       console.log(`Le mot à deviner est : ${word}`);
       setIsGameStarted(true);
@@ -96,23 +108,23 @@ const Game = () => {
       ])
     });
 
-    newSocket.on('gameStarted', ({ word }) => {
+    newSocket.on('gameStarted', ({ word }: { word: string }) => {
       setRandomWord(word);
       setIsGameStarted(true);
     });
 
-    newSocket.on('updateHiddenWord', ({ updatedWord, letter, playerId }) => {
+    newSocket.on('updateHiddenWord', ({ updatedWord }: { updatedWord: string }) => {
       setHiddenWord(updatedWord); // Mettre à jour le mot caché
     });
 
-    newSocket.on('nextPlayer', (nextPlayerId) => {
+    newSocket.on('nextPlayer', (nextPlayerId: string) => {
       // Vérifie si c'est le tour du joueur actuel
       if (nextPlayerId === playerId) {
         setMessage(`${playerId}, c'est à toi de jouer !`);
       }
     });
 
-    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord, showGuessButton, penalties, playerIdPenalized }) => {
+    newSocket.on('nextTurn', ({ playerId, updatedHiddenWord, showGuessButton, penalties, playerIdPenalized }: { playerId: string, updatedHiddenWord: string, showGuessButton: boolean, penalties: number, playerIdPenalized: string }) => {
       setHiddenWord(updatedHiddenWord);
       setStartingPlayer(playerId);
       setShowGuessButton(showGuessButton);
@@ -123,7 +135,7 @@ const Game = () => {
       console.log("Joueur pénalisé:", playerIdPenalized);
     });
 
-    newSocket.on('gameWon', ({ winner, word, looser, scores }) => {
+    newSocket.on('gameWon', ({ winner, word, looser, scores }: { winner: string, word: string, looser: string, scores: Record<string, number> }) => {
       // Mettre à jour le message de fin de jeu
       setGameEndMessage(`${winner} a gagné ! Le mot était : ${word}`);
       setWinner(winner);
@@ -142,11 +154,11 @@ const Game = () => {
       setShowGuessButton(false);
     });
 
-    newSocket.on('letterAlreadyGuessed', ({ letter }) => {
+    newSocket.on('letterAlreadyGuessed', ({ letter }: { letter: string }) => {
       letterAlreadyGuessed(letter);
     });
 
-    newSocket.on('letterGuessed', ({ letter }) => {
+    newSocket.on('letterGuessed', ({ letter }: { letter: string }) => {
       // Ajouter la lettre à la liste des lettres déjà devinées seulement si elle n'y est pas déjà
       setGuessedLetters((prevGuessedLetters) => {
         if (!prevGuessedLetters.includes(letter)) {
@@ -156,7 +168,7 @@ const Game = () => {
       });
     });
 
-    newSocket.on('updateReplayStatus', ({ playerId }) => {
+    newSocket.on('updateReplayStatus', ({ playerId }: { playerId: string }) => {
       setPlayersReady((prevPlayers) => {
         if (!prevPlayers.includes(playerId)) {
           return [...prevPlayers, playerId];
@@ -170,7 +182,7 @@ const Game = () => {
       setGuessedLetters([]);
     });
 
-    newSocket.on('gameEnded', ({ winner }) => {
+    newSocket.on('gameEnded', ({ winner }: { winner: string }) => {
       // Déclencher les confettis uniquement pour le joueur gagnant
       if (winner === playerId) {
         const end = Date.now() + 3 * 1000; // 3 seconds
@@ -216,20 +228,30 @@ const Game = () => {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch('http://localhost:3000/game', {
+      const response = await fetch(`${API_URL}/game`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
         },
       });
+  
       const data = await response.json();
-      setGames(data.filter((game: any) => game.state === 'pending'));
+      const userId = sessionStorage.getItem('userId'); // Assure-toi que l'ID utilisateur est stocké dans sessionStorage
+  
+      const filteredGames = data.filter((game: any) => {
+        return (
+          game.state === 'pending' ||
+          (game.state === 'playing' && !game.winner && (game.firstPlayer === userId || game.secondPlayer === userId))
+        );
+      });
+  
+      setGames(filteredGames);
       setIsLoading(false);
     } catch (error) {
       console.error("Erreur lors de la récupération des parties:", error);
     }
-  };
+  };  
 
   const createGame = async () => {
     setIsLoading(true);
@@ -237,7 +259,7 @@ const Game = () => {
     setTimeout(async () => {
     const token = sessionStorage.getItem('authToken');
     try {
-      const response = await fetch('http://localhost:3000/game', {
+      const response = await fetch(`${API_URL}/game`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -267,7 +289,7 @@ const Game = () => {
 
   const letterAlreadyGuessed = (letter: string) => {
     return (
-      <div className="alert alert-error">La lettre {letter} a déjà été devinée.</div>
+      <div className="alert">La lettre {letter} a déjà été devinée.</div>
     )
   }
 
@@ -290,7 +312,7 @@ const Game = () => {
 
     if (gameEndMessage && !isGameStarted) {
       if (modal) {
-        modal.showModal(); // Ouvrir le modal
+        (modal as HTMLDialogElement).showModal(); // Ouvrir le modal
       }
     }
 
@@ -337,12 +359,16 @@ const Game = () => {
   }
 
   const handleExitGame = () => {
+    const roomIdStored = sessionStorage.getItem('roomId');
+    const userIdStored = sessionStorage.getItem('userId');
+    
+    if (roomIdStored && userIdStored) {
+      socket.emit('leaveRoom', { roomId, userId });
+    }
+    
     setIsGameStarted(false);
     sessionStorage.removeItem('roomId');
-    const modal = document.getElementById('my_modal_1');
-    if (modal) {
-      modal.close(); // Fermer le modal
-    }
+    
     setIsLoading(true); // Activer le chargement
     setTimeout(() => {
       setRoomId(null);
@@ -368,6 +394,10 @@ const Game = () => {
       setShowGuessButton(false);
       setCountLetters(0);
     }, 1500); // Temps simulé pour l'actualisation
+    const modal = document.getElementById('my_modal_1');
+    if (modal) {
+      (modal as HTMLDialogElement).close(); // Fermer le modal
+    }
   };
 
   const sortedPlayers = players.sort((a, b) => b.points - a.points);
@@ -380,16 +410,29 @@ const Game = () => {
   const guessedWordModal = () => {
     const modal = document.getElementById('my_modal_2');
     if (modal) {
-      modal.showModal()
+      (modal as HTMLDialogElement).showModal()
     }
   }
 
-  const guessedWord = (wordGuess) => {
+  const handleguessedWordInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value.toUpperCase();
+    // Vérifier si c'est un mot composé uniquement de lettres de l'alphabet sans accents
+    if (value === '' || /^[A-Za-z]+$/.test(value)) {
+      setWordGuess(value);
+      console.log("Mot deviné:", value);
+    } else {
+      setToastMessage("Veuillez entrer un mot avec uniquement des lettres sans chiffres, accents ou caractères spéciaux.");
+      console.log("Mot invalide:", value);
+      return;
+    }
+  };
+
+  const guessedWord = (wordGuess: string) => {
     console.log("Mot deviné:", wordGuess);
     socket.emit('submitWordGuess', { roomId, playerId, wordGuess });
     const modal = document.getElementById('my_modal_2');
     if (modal) {
-      modal.close()
+      (modal as HTMLDialogElement).close()
     }
     // setWordGuess("");
   }
@@ -449,8 +492,8 @@ const Game = () => {
                     </div>
                     </p>
                   <p className="by">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
                     </svg>
                   Pour 2 joueurs</p>
                   <InteractiveHoverButton className="join" onClick={() => joinGame(game.id, userId)}>Rejoindre</InteractiveHoverButton>
@@ -502,7 +545,7 @@ const Game = () => {
                       <th>{index + 1}</th>
 
                       {/* Nom en vert si prêt */}
-                      <td className={playersReady.includes(player.id) ? 'text-green-500 font-bold' : ''}>
+                      <td className={player.id && playersReady?.includes(player.id) ? 'text-green-500 font-bold' : ''}>
                         {player.name}
                       </td>
 
@@ -512,15 +555,15 @@ const Game = () => {
                       <td>
                         {player.name === playerId ? (
                           <button 
-                            className={`btn ${playersReady.includes(player.id) ? 'btn-disabled' : ''}`}
-                            onClick={() => replay(player.id)}
-                            disabled={playersReady.includes(player.id)}
+                            className={`btn ${player.id && playersReady.includes(player.id) ? 'btn-disabled' : ''}`}
+                            onClick={() => player.id && replay(player.id)}
+                            disabled={player.id ? playersReady.includes(player.id) : false}
                           >
-                            {playersReady.includes(player.id) ? 'Prêt' : 'Rejouer'}
+                            {player.id && playersReady.includes(player.id) ? 'Prêt' : 'Rejouer'}
                           </button>
                         ) : (
                           <button className="btn btn-disabled opacity-50 cursor-not-allowed">
-                            {playersReady.includes(player.id) ? 'Prêt' : 'En attente'}
+                            {player.id && playersReady.includes(player.id) ? 'Prêt' : 'En attente'}
                           </button>
                         )}
                       </td>
@@ -593,7 +636,7 @@ const Game = () => {
                 placeholder="Entrez une lettre" 
                 className="input"
               />
-              <ToastNotification message={toastMessage} setMessage={setToastMessage} />
+              <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
               <button onClick={submitLetter} className="btn">Soumettre la lettre</button>
               { showGuessButton ? (
                 <>
@@ -604,9 +647,6 @@ const Game = () => {
                     <h2>⚠️ Attention</h2>
                     <p>Si vous décidez de deviner le mot, vous ne pourrez plus proposer de lettres pendant <strong className="text-2xl">2 tours</strong>.</p>
                     <br/>
-                    <p>Vous n'avez droit qu'à deviner un mot 
-                    <div className="badge badge-primary mx-2 font-medium">une fois par partie</div>
-                    </p>
                     <br/>
                     <div className="flex items-center justify-center gap-2 p-8 bg-base-200 rounded-lg">
                       <svg
@@ -623,12 +663,26 @@ const Game = () => {
                     <p>Il y a <strong>{countLetters} lettres</strong> dans le mot.</p>
                     </div>
                     <div className="flex items-center justify-center gap-2 mt-4">
-                      <input type="text" placeholder="Entrez le mot" className="input border border-base-300 rounded-lg " value={wordGuess} onChange={(e) => setWordGuess(e.target.value)} />
+                      <input 
+                        type="text" 
+                        placeholder="Entrez le mot" 
+                        className="input border border-base-300 rounded-lg " 
+                        value={wordGuess} 
+                        onChange={handleguessedWordInput} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && wordGuess) {
+                            guessedWord(wordGuess);
+                          } else if (e.key === 'Enter' && !wordGuess) {
+                            setToastMessage("Veuillez entrer un mot.");
+                          }}
+                        }
+                        />
                       <button className="btn" onClick={() => guessedWord(wordGuess)}>Soumettre</button>
+                      <button className="btn" onClick={() => { (document.getElementById('my_modal_2') as HTMLDialogElement).close() }}>Annuler</button>
                     </div>
                   </div>
                 </dialog>
-                <button className="btn" onClick={guessedWordModal}>Devinez le mot</button>
+                <PulsatingButton pulseColor={'#431176'} className="btn guessWord mx-4" onClick={guessedWordModal}>Devinez le mot</PulsatingButton>
                 </>
               ) : null }
           </div>

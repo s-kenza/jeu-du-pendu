@@ -5,6 +5,7 @@ const VerifyEmail = () => {
     const { token } = useParams()
     const [error, setError] = useState('')
     const navigate = useNavigate()
+    const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
     useEffect(() => {
         verifyEmail()
@@ -12,7 +13,7 @@ const VerifyEmail = () => {
 
     const verifyEmail = async () => {
         try {
-            const response = await fetch(`http://localhost:3000/verify/${token}`)
+            const response = await fetch(`${API_URL}:3000/verify/${token}`)
             const data = await response.json()
             if (response.ok) {
                 console.log('Success:', data)

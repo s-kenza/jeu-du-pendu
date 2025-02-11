@@ -28,7 +28,7 @@ const Layout: React.FC = () => {
     <div className="min-h-screen flex flex-col">
         <Navbar />
 
-        <ToastNotification message={toastMessage} setMessage={setToastMessage} />
+        <ToastNotification message={toastMessage ?? ''} setMessage={setToastMessage} />
 
         <main className="flex-grow">
           {isHomePage ? (

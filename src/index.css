@@ -99,6 +99,21 @@ button.join {
     background: #07ce14;
 }
 
+.btn.guessWord {
+    border: none;
+}
+
+[data-theme='light'] .btn.guessWord {
+    background: linear-gradient(to right, #3b82f6, #811ce7);
+    color: white;
+}
+
+[data-theme='dark'] .btn.guessWord {
+    background: linear-gradient(to right, #85B3FF, #C19DFF);
+    color: #431176;
+    animation: var
+}
+
 [data-theme='light'] .alert {
     font-weight: 700;
     color: white;
@@ -235,9 +250,16 @@ p.description {
     border-radius: 0.25rem;
 }
 
-.alert {
-    /* background : rgb(41, 71, 207) !important;
-    opacity: 1 !important; */
+.alert-error {
+    background : rgb(207, 41, 41) !important;
+}
+
+[data-theme='dark'] .alert-error {
+    color: white !important;
+
+}
+[data-theme='light'] .alert-error {
+    color: black !important;
 }
 
 @layer base {

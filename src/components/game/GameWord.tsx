@@ -7,7 +7,7 @@ const GameWord = ({ roomId, startingPlayer }: { roomId: string|null, startingPla
   const [lettersGuessed, setLettersGuessed] = useState<string[]>([]); // Liste des lettres devinées
   const [gameOver, setGameOver] = useState<boolean>(false); // Vérifier si la partie est terminée
   const [winner, setWinner] = useState<string | null>(null);
-
+  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const socket = useSocket(); // Utilisation du socket partagé (s'il existe)
 
   useEffect(() => {
@@ -16,7 +16,7 @@ const GameWord = ({ roomId, startingPlayer }: { roomId: string|null, startingPla
       // Choisir un mot aléatoire depuis une table `words`
       const getRandomWord = async () => {
         try {
-          const response = await fetch('http://localhost:3000/words'); // Vous devez avoir une API pour récupérer les mots
+          const response = await fetch(`${API_URL}/words`); // Vous devez avoir une API pour récupérer les mots
           const words = await response.json();
           const randomWord = words[Math.floor(Math.random() * words.length)];
           setWord(randomWord);
