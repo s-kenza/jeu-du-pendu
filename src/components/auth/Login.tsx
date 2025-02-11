@@ -31,6 +31,7 @@ const BasicForm = () => {
       
       const data = await response.json();
       console.log("Réponse du serveur:", data); // Log de la réponse
+      console.log("token", data.token); // Log du token
       
       if (!response.ok) {
         console.log("Status:", response.status); // Log du status
@@ -47,13 +48,12 @@ const BasicForm = () => {
         });
         console.log("userResponse:", userResponse); // Log de la réponse
 
+
         if (userResponse.ok) {
           const userData = await userResponse.json();
           const currentUser = userData.find((user: any) => user.email === values.email);
 
           console.log('currentUser:', currentUser); // Log de l'utilisateur
-
-          console.log('token:', data.token); // Log du token
 
           if (currentUser) {
             login(data.token, currentUser.id);
