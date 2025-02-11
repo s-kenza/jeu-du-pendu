@@ -27,6 +27,8 @@ const BasicForm = () => {
         },
         body: JSON.stringify(values),
       });
+
+      console.log("Réponse du serveur:", response); // Log de la réponse
   
       const data = await response.json();
       console.log("Réponse du serveur:", data); // Log de la réponse
