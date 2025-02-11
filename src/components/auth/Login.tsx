@@ -28,16 +28,15 @@ const BasicForm = () => {
         body: JSON.stringify(values),
       });
 
-      console.log("Réponse du serveur:", response); // Log de la réponse
-  
+      
       const data = await response.json();
       console.log("Réponse du serveur:", data); // Log de la réponse
-  
+      
       if (!response.ok) {
         console.log("Status:", response.status); // Log du status
         throw new Error(data.error || 'Erreur serveur');
       }
-  
+      
       if (data.token) {
         // Vérification supplémentaire de l'utilisateur (comme avant)
         const userResponse = await fetch(`${API_URL}/users`, {
@@ -46,10 +45,15 @@ const BasicForm = () => {
             'Authorization': `Bearer ${data.token}`,
           },
         });
+        console.log("userResponse:", userResponse); // Log de la réponse
 
         if (userResponse.ok) {
           const userData = await userResponse.json();
           const currentUser = userData.find((user: any) => user.email === values.email);
+
+          console.log('currentUser:', currentUser); // Log de l'utilisateur
+
+          console.log('token:', data.token); // Log du token
 
           if (currentUser) {
             login(data.token, currentUser.id);
