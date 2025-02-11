@@ -1,0 +1,39 @@
+<mjml>
+      <mj-head>
+        <mj-title>Vérification de votre compte</mj-title>
+        <mj-font name="Roboto" href="https://fonts.googleapis.com/css?family=Roboto" />
+        <mj-attributes>
+          <mj-all font-family="Roboto, Helvetica, sans-serif" />
+        </mj-attributes>
+      </mj-head>
+      <mj-body>
+        <mj-section background-color="#ffffff">
+          <mj-column>
+            <mj-image width="100px" src="https://cdn-icons-png.freepik.com/256/13338/13338262.png?semt=ais_hybrid" />
+            
+            <mj-text font-size="20px" color="#333333" font-weight="bold">
+              Bienvenue ${user.firstname} ${user.lastname}
+            </mj-text>
+
+            <mj-text font-size="16px" color="#333333">
+              Merci de vous être inscrit sur notre plateforme.
+            </mj-text>
+
+            <mj-text font-size="16px" color="#333333">
+              Pour commencer à utiliser votre compte, veuillez cliquer sur le bouton ci-dessous :
+            </mj-text>
+
+            <mj-button background-color="#6366F1" href="http://localhost:5173/verify/${user.verifiedtoken}">
+              Vérifier mon compte
+            </mj-button>
+
+            <mj-text font-size="14px" color="#666666" padding-top="20px">
+              Si le bouton ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :
+              <a href="http://localhost:5173/verify/${user.verifiedtoken}">
+                http://localhost:5173/verify/${user.verifiedtoken}
+              </a>
+            </mj-text>
+          </mj-column>
+        </mj-section>
+      </mj-body>
+    </mjml>

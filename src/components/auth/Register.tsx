@@ -10,32 +10,60 @@ const BasicForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-
+  const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const navigate = useNavigate();
 
   /* Fonction pour soumettre les données à l'API */
-  const handleSubmit = async (values, { setSubmitting, setErrors }) => {
+  const handleSubmit = async (values: any, { setSubmitting, setErrors }: { setSubmitting: (isSubmitting: boolean) => void, setErrors: (errors: any) => void }) => {
     try {
-      const response = await fetch('http://localhost:3000/register', {
+      console.log("Données d'inscription envoyées:", values);
+  
+      const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(values),
       });
+  
       const data = await response.json();
+      console.log("Réponse du serveur:", data);
+  
       if (response.ok) {
-        console.log("Inscription réussie : ", data);
         setErrorMessage('');
-        navigate('/login', { state: { message: 'Inscription réussie. Veuillez vérifier votre email.' } });
+        navigate('/login', { 
+          state: { message: 'Inscription réussie. Veuillez vérifier votre email.' } 
+        });
       } else {
-        setError(true);
-        setErrorMessage(data.error || 'Une erreur est survenue');
+        // Gestion des différentes erreurs possibles du backend
+        setErrorMessage(data.error);
+        
+        // Gestion spécifique des erreurs par champ
+        switch (data.error) {
+          case "Tous les champs sont obligatoires":
+            setErrors({
+              firstname: "Ce champ est obligatoire",
+              lastname: "Ce champ est obligatoire",
+              username: "Ce champ est obligatoire",
+              email: "Ce champ est obligatoire",
+              password: "Ce champ est obligatoire"
+            });
+            break;
+          case "L'adresse email est déjà utilisée.":
+            setErrors({
+              email: "Cette adresse email est déjà utilisée"
+            });
+            break;
+          case "Le nom d'utilisateur est déjà utilisé.":
+            setErrors({
+              username: "Ce nom d'utilisateur est déjà pris"
+            });
+            break;
+        }
         setLoading(false);
       }
     } catch (error) {
-      console.error("Erreur lors de l'inscription :", error);
-      setError(true);
+      console.error("Erreur détaillée:", error);
       setErrorMessage('Erreur réseau. Veuillez réessayer plus tard.');
       setLoading(false);
     } finally {
@@ -46,7 +74,7 @@ const BasicForm = () => {
   useEffect(() => {
     if (error) {
       const modal = document.getElementById('error_modal');
-      modal?.showModal();
+      (modal as HTMLDialogElement).showModal();
     }
   }, [error]);
 
@@ -86,7 +114,7 @@ const BasicForm = () => {
               email: Yup.string().email('Adresse e-mail invalide').required('Champ requis'),
               password: Yup.string().min(6, 'Le mot de passe doit contenir au moins 6 caractères').required('Champ requis'),
               confirmPassword: Yup.string()
-                .oneOf([Yup.ref('password'), null], 'Les mots de passe ne correspondent pas')
+                .oneOf([Yup.ref('password'), undefined], 'Les mots de passe ne correspondent pas')
                 .required('Champ requis'),
               firstname: Yup.string().required('Champ requis'),
               lastname: Yup.string().required('Champ requis'),
@@ -94,7 +122,7 @@ const BasicForm = () => {
             })}
             onSubmit={handleSubmit}
           >
-            {({ isSubmitting, errors }) => (
+            {({ isSubmitting }) => (
               <Form className="px-5 py-7">
                 <Field name="firstname" label="Prénom" component={CustomInputComponent} />
                 <Field name="lastname" label="Nom de famille" component={CustomInputComponent} />
@@ -124,27 +152,28 @@ const BasicForm = () => {
           {/* Reste de votre composant */}
           <div className="py-5">
             <div className="grid grid-cols-2 gap-1">
-              <div className="text-center sm:text-left whitespace-nowrap">
-                <button
-                  type="button"
-                  className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    className="w-4 h-4 inline-block align-text-top"
+            <div className="text-center sm:text-right whitespace-nowrap">
+                <Link to="/login">
+                  <button
+                    type="button"
+                    className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <span className="inline-block ml-1">Mot de passe oublié ?</span>
-                </button>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor" 
+                      className="w-4 h-4 inline-block align-text-bottom">
+                      <path 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        strokeWidth="2"
+                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                      />
+                    </svg>
+                    <span className='inline-block ml-1'>Déjà inscrit ? Je me connecte</span>
+                  </button>
+                </Link>
               </div>
               <div className="text-center sm:text-right whitespace-nowrap">
                 <button
@@ -167,29 +196,6 @@ const BasicForm = () => {
                   </svg>
                   <span className='inline-block ml-1'>Aide</span>
                 </button>
-              </div>
-              <div className="text-center sm:text-right whitespace-nowrap">
-                <Link to="/login">
-                  <button
-                    type="button"
-                    className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
-                      className="w-4 h-4 inline-block align-text-bottom">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        strokeWidth="2"
-                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
-                      />
-                    </svg>
-                    <span className='inline-block ml-1'>Déjà inscrit ? Je me connecte</span>
-                  </button>
-                </Link>
               </div>
             </div>
           </div>

@@ -13,6 +13,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <AuthLayout />,
+    errorElement: <div>404 Not Found</div>,
     children: [
       {
         path: 'register',

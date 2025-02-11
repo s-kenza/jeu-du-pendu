@@ -20,17 +20,6 @@ const Navbar = () => {
         setOpen(e.target.open); // Synchronise l'état avec l'ouverture/fermeture du menu
     };
 
-    const handleLinkClick = (path: any) => {
-        if (location.pathname === path) {
-            // Si on est déjà sur la page, on ferme simplement le menu
-            setOpen(false);
-        } else {
-            // Si on est sur une autre page, on navigue vers la nouvelle route et ferme le menu
-            navigate(path);
-            setOpen(false);
-        }
-    };
-
     const handleLogout = () => {
         // Supprime le token du sessionStorage
         sessionStorage.removeItem('authToken');

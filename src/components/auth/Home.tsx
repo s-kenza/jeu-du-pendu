@@ -5,6 +5,8 @@ import Navbar from '../Navbar';
 import { useAuth } from '../context/AuthContext';
 import ToastNotification from './ToastNotification';
 import { CoolMode } from '../cool-mode';
+import { WarpBackground } from '../magicui/warp-background';
+import { FlipText } from '../magicui/flip-text';
 
 const Layout: React.FC = () => {
   const location = useLocation();
@@ -23,16 +25,22 @@ const Layout: React.FC = () => {
   }, [location.state, isAuthenticated]);
 
   return (
-    <>
-      <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col">
         <Navbar />
 
-        <ToastNotification message={toastMessage} setMessage={setToastMessage} />
+        <ToastNotification message={toastMessage ?? ''} setMessage={setToastMessage} />
 
         <main className="flex-grow">
           {isHomePage ? (
+        <WarpBackground>
             <div className="flex flex-col items-center justify-center min-h-screen">
-              <h1 className="text-4xl font-bold mb-4">Jeu du Pendu</h1>
+              <div className='mb-12'>
+              <FlipText
+                className="text-8xl font-bold -tracking-widest md:text-7xl md:leading-[5rem]"
+                word="Jeu du Pendu"
+                delayMultiple={0.08}
+              />
+              </div>              
               <p className="text-lg mb-6 text-center max-w-lg">
                 Bienvenue dans le jeu du pendu ! Testez vos compétences en devinant les mots choisis par le système. 
                 Amusez-vous tout en apprenant de nouveaux mots !
@@ -53,6 +61,7 @@ const Layout: React.FC = () => {
                 </Link>
               )}
             </div>
+          </WarpBackground>
           ) : (
             <Outlet />
           )}
@@ -60,7 +69,6 @@ const Layout: React.FC = () => {
 
         <Footer />
       </div>
-    </>
   );
 };
 

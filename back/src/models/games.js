@@ -22,8 +22,14 @@ Game.belongsTo(User, { targetKey: "id", foreignKey: "creator", as: "player1" });
 Game.belongsTo(User, {
 	allowNull: true,
 	targetKey: "id",
-	foreignKey: "player",
-	as: "player2",
+	foreignKey: "firstPlayer",
+	as: "playerOne",
+});
+Game.belongsTo(User, {
+	allowNull: true,
+	targetKey: "id",
+	foreignKey: "secondPlayer",
+	as: "playerTwo",
 });
 Game.belongsTo(User, {
 	allowNull: true,

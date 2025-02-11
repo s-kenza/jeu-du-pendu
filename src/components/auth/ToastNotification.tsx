@@ -1,6 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 
-const ToastNotification = ({ message, setMessage }) => {
+interface ToastNotificationProps {
+  message: string;
+  setMessage: (message: string) => void;
+}
+
+const ToastNotification = ({ message, setMessage }: ToastNotificationProps) => {
   useEffect(() => {
     if (message) {
       const timeout = setTimeout(() => setMessage(''), 5000); // Cache le toast après 5s
