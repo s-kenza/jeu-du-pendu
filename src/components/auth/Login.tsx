@@ -21,7 +21,8 @@ const BasicForm = () => {
   const location = useLocation();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-
+  
+  console.log("BACKEND_URL utilisé:", API_URL);
   const handleSubmit = async (values: any, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
       console.log("Envoi des données:", values); // Log des données envoyées

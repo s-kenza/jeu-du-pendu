@@ -98,6 +98,9 @@ app.get("/", (request, reply) => {
 // Fonction pour décoder et vérifier le token
 app.decorate("authenticate", async (request, reply) => {
 	try {
+		console.log("Headers:", request.headers);
+		await request.jwtVerify();
+    	console.log("Authentification réussie pour", request.user);
 		const token = request.headers["authorization"].split(" ")[1];
 
 		// Vérifier si le token est dans la liste noire
