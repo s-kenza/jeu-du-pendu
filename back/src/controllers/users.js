@@ -7,6 +7,11 @@ import { dirname } from 'path';
 import mjml2html from 'mjml';
 import path from 'path';
 import fs from 'fs/promises';
+import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
+
+const mailerSend = new MailerSend({
+	apiKey: process.env.MAIL_TOKEN,
+}); 
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -93,15 +98,31 @@ export async function registerUser(userDatas, bcrypt) {
 		verifiedtoken: generateToken,
 	};
 
-	const newUser = await User.create(user);
-  
-	if (newUser) {
-		try {
-		await sendVerificationEmail(newUser);
-		} catch (error) {
-		console.error("Erreur lors de l'envoi de l'email de vérification:", error);
-		}
-	}
+		const newUser = await User.create(user);
+
+	// Send mail
+	try {
+		const sender = new Sender(
+		  "no-reply@trial-jy7zpl9o2vpl5vx6.mlsender.net",
+		  "Kenza SCHULER"
+		);
+		const recipients = [new Recipient(newUser.email, `${newUser.firstname} ${newUser.lastName}`)];
+		const url = `${process.env.APP_FRONT_URL}/verify/${newUser.verifiedtoken}`;
+		const html = `<a href="${url}" target="_blank">Activer mon compte</a>`;
+		const params = new EmailParams()
+		  .setFrom(sender)
+		  .setTo(recipients)
+		  .setSubject("Confirmation d'inscription")
+		  .setHtml(html);
+		await mailerSend.email.send(params);
+	  } catch (error) {
+		console.log(error);
+		return {
+		  error: "Échec de la création du compte : impossible d'envoyer un mail",
+		  errorCode: "CANNOT_SEND_MAIL",
+		  status: 500,
+		};
+	  }
 
 	return newUser;
 }

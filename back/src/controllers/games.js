@@ -1,7 +1,15 @@
 import Game from "../models/games.js";
+import User from "../models/users.js";
 
 export async function getGames() {
-	return await Game.findAll();
+	return await Game.findAll({
+		include: [
+			{ model: User,
+			  as: "creatorPlayer",
+			  attributes: ["id", "username"]
+			}
+		]
+	});
 }
 
 export async function createGame(userId) {

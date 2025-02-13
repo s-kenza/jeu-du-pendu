@@ -16,7 +16,8 @@ const VerifyEmail = () => {
         try {
             const response = await fetch(`${API_URL}/verify/${token}`, {
                 headers: {
-                    'ngrok-skip-browser-warning': 'any',
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
                 }
             })
             console.log("response", response)

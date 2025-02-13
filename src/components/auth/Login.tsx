@@ -38,7 +38,9 @@ const BasicForm = () => {
 
       
       const data = await response.json();
-      console.log("Réponse du serveur:", data); // Log de la réponse
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
       if (!response.ok) {
         console.log("Status:", response.status); // Log du status
@@ -49,7 +51,7 @@ const BasicForm = () => {
         const decoded = jwtDecode<DecodedToken>(data.token);
 
         if (decoded != null) {
-            login(data.token, decoded.id);
+            login(data.token, decoded.id, decoded.username);
             navigate('/game', { state: { message: 'Vous êtes connecté' } });
             throw new Error('Utilisateur non trouvé');
         } else {

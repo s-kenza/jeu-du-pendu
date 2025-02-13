@@ -38,4 +38,6 @@ Game.belongsTo(User, {
 	as: "winPlayer",
 });
 
+Game.belongsTo(User, {foreignKey: "creator", as: "creatorPlayer"});
+
 export default Game;

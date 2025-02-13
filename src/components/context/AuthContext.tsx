@@ -6,7 +6,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   userId: string | null;
   socket: Socket | null;
-  login: (token: string, userId: string) => void;
+  login: (token: string, userId: string, username: string) => void;
   logout: (userId: string) => void;
 }
 
@@ -21,9 +21,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
   // Fonction pour gérer la connexion
-  const login = (token: string, userId: string) => {
+  const login = (token: string, userId: string, username: string) => {
     sessionStorage.setItem('authToken', token);
     sessionStorage.setItem('userId', userId);
+    sessionStorage.setItem('username', username);
     setIsAuthenticated(true);
     setUserId(userId);
 

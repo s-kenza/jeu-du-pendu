@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext.tsx";
 import { io } from 'socket.io-client';
 import confetti from "canvas-confetti";
 import { BorderBeam } from "../border-beam.tsx";
@@ -491,7 +491,7 @@ const Game = () => {
                   <BorderBeam />
                   <p className="description">Partie créée par 
                     <div className="creator">
-                      <ColourfulText text={game.creator} />
+                      <ColourfulText text={game.creatorPlayer.username} />
                     </div>
                     </p>
                   <p className="by">
@@ -591,10 +591,10 @@ const Game = () => {
       )}
 
         {isGameStarted && (
-        <div className="card">
-        <h2>Vous êtes le joueur {playerId}</h2>
+          <div className="card">
+        <h2>Vous êtes le joueur {sessionStorage.getItem('username')}</h2>
         {isChoosing && (
-        <div className="flex justify-center items-center">
+          <div className="flex justify-center items-center">
           <span className="loading loading-ring loading-lg"></span>
         </div>
         )}
@@ -610,7 +610,7 @@ const Game = () => {
         
         {startingPlayer !== playerId && isGameStarted && (
           <div className="flex justify-center items-center">
-            <p>Attends que {startingPlayer} joue !</p>
+            <p>Attends que {sessionStorage.getItem('username')} joue !</p>
             <div className="flex justify-center items-center">
               <span className="loading loading-ring loading-lg"></span>
             </div>
