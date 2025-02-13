@@ -328,7 +328,7 @@ const Game = () => {
   const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toUpperCase();
     // Vérifier si c'est une seule lettre entre A et Z
-    if (/^[A-Z]$/.test(value) && value === '') {
+    if (/^[A-Z]$/.test(value) || value === '') {
       setLetter(value);
     } else {
       setToastMessage("Veuillez entrer une seule lettre entre A et Z.");
