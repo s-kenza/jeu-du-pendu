@@ -225,7 +225,7 @@ const Game = () => {
     return () => {
       newSocket.disconnect();
     };
-  }, [userId, roomId, sessionStorage.getItem('roomId')]);
+  }, [userId, roomId]);
 
   const fetchGames = async () => {
     try {
