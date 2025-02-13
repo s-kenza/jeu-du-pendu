@@ -27,12 +27,6 @@
               Vérifier mon compte
             </mj-button>
 
-            <mj-text font-size="14px" color="#666666" padding-top="20px">
-              Si le bouton ne fonctionne pas, vous pouvez copier et coller ce lien dans votre navigateur :
-              <a href="http://localhost:5173/verify/${user.verifiedtoken}">
-                http://localhost:5173/verify/${user.verifiedtoken}
-              </a>
-            </mj-text>
           </mj-column>
         </mj-section>
       </mj-body>

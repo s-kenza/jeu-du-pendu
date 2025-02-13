@@ -12,12 +12,14 @@ const VerifyEmail = () => {
     }, [])
 
     const verifyEmail = async () => {
+        console.log('verifyEmail', token)
         try {
-            const response = await fetch(`${API_URL}:3000/verify/${token}`, {
+            const response = await fetch(`${API_URL}/verify/${token}`, {
                 headers: {
                     'ngrok-skip-browser-warning': 'any',
                 }
             })
+            console.log("response", response)
             const data = await response.json()
             if (response.ok) {
                 console.log('Success:', data)

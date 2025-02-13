@@ -74,7 +74,8 @@ const Game = () => {
 
     console.log('roomId', roomId);
 
-    if (roomId !== null) {
+    if (sessionStorage.getItem('roomId') !== null) {
+      console.log('ici');
       newSocket.emit('joinRoom', { roomId, userId });
     }
 
@@ -224,7 +225,7 @@ const Game = () => {
     return () => {
       newSocket.disconnect();
     };
-  }, [userId, roomId]);
+  }, [userId, roomId, sessionStorage.getItem('roomId')]);
 
   const fetchGames = async () => {
     try {
@@ -237,12 +238,8 @@ const Game = () => {
         },
       });
   
-      console.log('response', response);
-
       const data = await response.json();
-      console.log('data', data);
       const userId = sessionStorage.getItem('userId'); // Assure-toi que l'ID utilisateur est stocké dans sessionStorage
-      console.log('userId', userId);
 
       const filteredGames = data.filter((game: any) => {
         return (
@@ -250,8 +247,6 @@ const Game = () => {
           (game.state === 'playing' && !game.winner && (game.firstPlayer === userId || game.secondPlayer === userId))
         );
       });
-
-      console.log('filteredGames', filteredGames);
   
       setGames(filteredGames);
       setIsLoading(false);
@@ -333,7 +328,7 @@ const Game = () => {
   const handleLetterInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toUpperCase();
     // Vérifier si c'est une seule lettre entre A et Z
-    if (/^[A-Z]$/.test(value)) {
+    if (/^[A-Z]$/.test(value) && value === '') {
       setLetter(value);
     } else {
       setToastMessage("Veuillez entrer une seule lettre entre A et Z.");
