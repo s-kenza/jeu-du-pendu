@@ -233,10 +233,12 @@ const Game = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${sessionStorage.getItem('authToken')}`,
+          'ngrok-skip-browser-warning': 'any',
         },
       });
   
       console.log('response', response);
+
       const data = await response.json();
       console.log('data', data);
       const userId = sessionStorage.getItem('userId'); // Assure-toi que l'ID utilisateur est stocké dans sessionStorage
@@ -269,6 +271,7 @@ const Game = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'any',
         },
         body: JSON.stringify({ userId: userId }),
       });

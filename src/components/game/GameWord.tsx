@@ -16,7 +16,11 @@ const GameWord = ({ roomId, startingPlayer }: { roomId: string|null, startingPla
       // Choisir un mot aléatoire depuis une table `words`
       const getRandomWord = async () => {
         try {
-          const response = await fetch(`${API_URL}/words`); // Vous devez avoir une API pour récupérer les mots
+          const response = await fetch(`${API_URL}/words`, {
+            headers: {
+              'ngrok-skip-browser-warning': 'any',
+            }
+          }); // Vous devez avoir une API pour récupérer les mots
           const words = await response.json();
           const randomWord = words[Math.floor(Math.random() * words.length)];
           setWord(randomWord);

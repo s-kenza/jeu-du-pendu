@@ -22,6 +22,7 @@ const BasicForm = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'any',
         },
         body: JSON.stringify(values),
       });

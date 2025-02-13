@@ -30,7 +30,7 @@ try {
 	console.error("Impossible de se connecter, erreur suivante :", error);
 }
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = "http://localhost:3000";
 
 /**
  * API
@@ -98,7 +98,6 @@ app.get("/", (request, reply) => {
 // Fonction pour décoder et vérifier le token
 app.decorate("authenticate", async (request, reply) => {
 	try {
-		console.log("Headers:", request.headers);
 		await request.jwtVerify();
     	console.log("Authentification réussie pour", request.user);
 		const token = request.headers["authorization"].split(" ")[1];

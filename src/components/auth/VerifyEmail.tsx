@@ -13,7 +13,11 @@ const VerifyEmail = () => {
 
     const verifyEmail = async () => {
         try {
-            const response = await fetch(`${API_URL}:3000/verify/${token}`)
+            const response = await fetch(`${API_URL}:3000/verify/${token}`, {
+                headers: {
+                    'ngrok-skip-browser-warning': 'any',
+                }
+            })
             const data = await response.json()
             if (response.ok) {
                 console.log('Success:', data)
