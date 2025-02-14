@@ -133,7 +133,7 @@ const BasicForm = () => {
           <div className="py-5">
             <div className="grid grid-cols-2 gap-1">
             <div className="text-center sm:text-right whitespace-nowrap">
-                <Link to="/login">
+                <Link to="/register">
                   <button
                     type="button"
                     className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
