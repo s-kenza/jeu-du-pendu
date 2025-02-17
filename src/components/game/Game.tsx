@@ -24,7 +24,7 @@ const Game = () => {
   const [isChoosing, setIsChoosing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [startingPlayer, setStartingPlayer] = useState<string | null>(null);
-  const [randomWord, setRandomWord] = useState<string | null>(null); 
+  const [randomWord, setRandomWord] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null); // Message à afficher
   const [letter, setLetter] = useState<string>(""); // Lettre entrée par le joueur
   const [hiddenWord, setHiddenWord] = useState<string>("");
@@ -64,8 +64,8 @@ const Game = () => {
     console.log('players length', players.length);
     console.log('players', players);
     if (
-      storedRoomId && 
-      players.length === 2 && 
+      storedRoomId &&
+      players.length === 2 &&
       players.every(player => player.id !== null && player.id !== undefined)
     ) {
       setRoomId(storedRoomId);
@@ -176,7 +176,7 @@ const Game = () => {
         }
         return prevPlayers;
       });
-    });    
+    });
 
     newSocket.on('bothPlayersReady', () => {
       setPlayersReady([]);
@@ -191,7 +191,7 @@ const Game = () => {
 
         const frame = () => {
           if (Date.now() > end) return;
-    
+
           confetti({
             particleCount: 2,
             angle: 60,
@@ -208,10 +208,10 @@ const Game = () => {
             origin: { x: 1, y: 0.5 },
             colors: colors
           });
-    
+
           requestAnimationFrame(frame);
         };
-    
+
         frame();
       }
 
@@ -237,7 +237,7 @@ const Game = () => {
           'ngrok-skip-browser-warning': 'any',
         },
       });
-  
+
       const data = await response.json();
       const userId = sessionStorage.getItem('userId'); // Assure-toi que l'ID utilisateur est stocké dans sessionStorage
 
@@ -247,13 +247,13 @@ const Game = () => {
           (game.state === 'playing' && !game.winner && (game.firstPlayer === userId || game.secondPlayer === userId))
         );
       });
-  
+
       setGames(filteredGames);
       setIsLoading(false);
     } catch (error) {
       console.error("Erreur lors de la récupération des parties:", error);
     }
-  };  
+  };
 
   const createGame = async () => {
     setIsLoading(true);
@@ -310,7 +310,7 @@ const Game = () => {
 
   useEffect(() => {
     const modal = document.getElementById('my_modal_1');
-    
+
     setMessage(`Renseigne une lettre pour tenter de deviner le mot !`);
 
     if (gameEndMessage && !isGameStarted) {
@@ -344,10 +344,10 @@ const Game = () => {
       alert(`La lettre ${letter} a déjà été devinée.`); // Alerte avant d'envoyer
       return;
     }
-  
+
     // Envoyer la lettre au serveur
     socket.emit('submitLetter', { roomId, playerId, letter, penalties, playerIdPenalized });
-  
+
     // Ajout de la lettre localement pour la prochaine mise à jour (mais uniquement après la réponse serveur)
     setGuessedLetters((prevGuessedLetters) => [...prevGuessedLetters, letter]);
 
@@ -364,14 +364,14 @@ const Game = () => {
   const handleExitGame = () => {
     const roomIdStored = sessionStorage.getItem('roomId');
     const userIdStored = sessionStorage.getItem('userId');
-    
+
     if (roomIdStored && userIdStored) {
       socket.emit('leaveRoom', { roomId, userId });
     }
-    
+
     setIsGameStarted(false);
     sessionStorage.removeItem('roomId');
-    
+
     setIsLoading(true); // Activer le chargement
     setTimeout(() => {
       setRoomId(null);
@@ -469,7 +469,7 @@ const Game = () => {
       ) : !roomId ? (
         <div className="card">
           <div className="title">
-            <SparklesText text="Parties disponibles" 
+            <SparklesText text="Parties disponibles"
             sparklesCount={10}
             colors={{ first: '#65aa5e', second: '#FE8BBB' }} />
             <button className="refresh" onClick={refreshGameList}>
@@ -489,7 +489,7 @@ const Game = () => {
               {games.map((game: any) => (
                 <li className="card game" key={game.id}>
                   <BorderBeam />
-                  <p className="description">Partie créée par 
+                  <p className="description">Partie créée par
                     <div className="creator">
                       <ColourfulText text={game.creatorPlayer.username} />
                     </div>
@@ -506,7 +506,7 @@ const Game = () => {
           )}
           <PulsatingButton className="create" onClick={createGame}>Créer une partie</PulsatingButton>
         </div>
-      ) : roomId && !isGameStarted && 
+      ) : roomId && !isGameStarted &&
       <div className="card">
         <div className="waiting">
           <h2>En attente d'un adversaire
@@ -557,7 +557,7 @@ const Game = () => {
                       {/* Bouton pour rejouer */}
                       <td>
                         {player.name === playerId ? (
-                          <button 
+                          <button
                             className={`btn ${player.id && playersReady.includes(player.id) ? 'btn-disabled' : ''}`}
                             onClick={() => player.id && replay(player.id)}
                             disabled={player.id ? playersReady.includes(player.id) : false}
@@ -578,7 +578,7 @@ const Game = () => {
 
             {/* Message de fin */}
             <p className="py-4 text-center">{gameEndMessage}</p>
-            
+
               {/* Bouton pour fermer le modal si nécessaire */}
               <div className="modal-action">
                 <button className="btn" onClick={handleExitGame}>
@@ -607,10 +607,10 @@ const Game = () => {
             <p className="text-lg mt-2">{message}</p>
           </div>
           )}
-        
+
         {startingPlayer !== playerId && isGameStarted && (
           <div className="flex justify-center items-center">
-            <p>Attends que {sessionStorage.getItem('username')} joue !</p>
+            <p>Attends que {startingPlayer} joue !</p>
             <div className="flex justify-center items-center">
               <span className="loading loading-ring loading-lg"></span>
             </div>
@@ -624,10 +624,10 @@ const Game = () => {
 
         {startingPlayer === playerId && (
           <div className="flex justify-center items-center mt-4">
-            <input 
-                type="text" 
-                value={letter} 
-                onChange={handleLetterInput} 
+            <input
+                type="text"
+                value={letter}
+                onChange={handleLetterInput}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && letter) {
                     submitLetter();
@@ -635,8 +635,8 @@ const Game = () => {
                     setToastMessage("Veuillez entrer une lettre.");
                   }
                 }}
-                maxLength={1} 
-                placeholder="Entrez une lettre" 
+                maxLength={1}
+                placeholder="Entrez une lettre"
                 className="input"
               />
               <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
@@ -644,7 +644,7 @@ const Game = () => {
               { showGuessButton ? (
                 <>
                 <dialog id="my_modal_2" className="modal">
-                  <div className="modal-box flex flex-col overflow-hidden items-center justify-center text-center"> 
+                  <div className="modal-box flex flex-col overflow-hidden items-center justify-center text-center">
                     <Ripple mainCircleSize={210} mainCircleOpacity={0.25} />
                     <h1 className="font-bold text-6xl ">Devinez le mot</h1>
                     <h2>⚠️ Attention</h2>
@@ -666,12 +666,12 @@ const Game = () => {
                     <p>Il y a <strong>{countLetters} lettres</strong> dans le mot.</p>
                     </div>
                     <div className="flex items-center justify-center gap-2 mt-4">
-                      <input 
-                        type="text" 
-                        placeholder="Entrez le mot" 
-                        className="input border border-base-300 rounded-lg " 
-                        value={wordGuess} 
-                        onChange={handleguessedWordInput} 
+                      <input
+                        type="text"
+                        placeholder="Entrez le mot"
+                        className="input border border-base-300 rounded-lg "
+                        value={wordGuess}
+                        onChange={handleguessedWordInput}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && wordGuess) {
                             guessedWord(wordGuess);
@@ -701,7 +701,7 @@ const Game = () => {
     )}
 
     </div>
-  );  
+  );
 };
 
 export default Game;
