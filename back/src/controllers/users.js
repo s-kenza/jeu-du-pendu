@@ -8,7 +8,7 @@ import mjml2html from 'mjml';
 import path from 'path';
 import fs from 'fs/promises';
 import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
-import emailjs from '@emailjs/nodejs';
+import nodemailer from 'nodemailer';
 
 const mailerSend = new MailerSend({
 	apiKey: process.env.MAIL_TOKEN,
@@ -103,20 +103,26 @@ export async function registerUser(userDatas, bcrypt) {
 
 	// Send mail
 	try {
-		const response = await emailjs.send(
-			"service_s0f6a69",
-			"template_po35zvd",
-			{
-				to_name: `${newUser.firstname} ${newUser.lastname}`,
-				to_email: newUser.email,
-				verify_link: `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`
+		const transporter = nodemailer.createTransport({
+			service: "gmail",
+			auth: {
+			user: "kenza.schuler@gmail.com",
+			pass: "nxtf cqmm lrlz wqed"
 			},
-			{
-				publicKey: "5OYtZY-tW0uqgfNji",
-				privateKey: "Joe0ZldeuQz-r23g4-mfp"
-			}
-		)
-		console.log("Email envoyé !", response);
+		});
+		const url = `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`;
+
+		await transporter.sendMail({
+			from: `"Kenza" <${"kenza.schuler@gmail.com"}>`,
+			to: newUser.email,
+			subject: "Confirmation d'inscription",
+			html: `<p>Bonjour ${newUser.firstname},</p>
+				<p>Merci pour ton inscription 🥰</p>
+				<p>👉 <a href="${url}" target="_blank">Active ton compte</a></p>`,
+		});
+
+		console.log("✅ Email de confirmation envoyé à :", newUser.email);
+
 	} catch (error) {
 		console.log(error);
 		return {
