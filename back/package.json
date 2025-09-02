@@ -19,10 +19,12 @@
 		"lotr-jdr-api": "file:",
 		"mailersend": "^2.3.0",
 		"mysql2": "^3.11.3",
+		"nodemailer": "^7.0.6",
 		"sequelize": "^6.37.3",
 		"socket.io": "^4.8.0"
 	},
 	"scripts": {
-		"dev": "node --watch src/server.js"
+		"dev": "node --watch src/server.js",
+		"start": "node src/server.js"
 	}
 }
