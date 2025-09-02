@@ -23,7 +23,7 @@
               Pour commencer à utiliser votre compte, veuillez cliquer sur le bouton ci-dessous :
             </mj-text>
 
-            <mj-button background-color="#6366F1" href="http://localhost:5173/verify/${user.verifiedtoken}">
+            <mj-button background-color="#6366F1" href="https://jeu-de-kenza.vercel.app/verify/${user.verifiedtoken}">
               Vérifier mon compte
             </mj-button>
 

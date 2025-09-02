@@ -56,6 +56,27 @@ export async function findAndCountAllUsersByUsername(username) {
 		},
 	});
 }
+
+function createTransporter() {
+	return nodemailer.createTransport({
+		service: 'gmail',
+		auth: {
+			user: "kenza.schuler@gmail.com",
+			pass: "nxtf cqmm lrlz wqed",
+		}
+	});
+}
+
+function getMJMLTemplate(firstname) {
+	const mjmlFilePath = "./src/templates/verification.mjml";
+	const emailTemplate = fs.readFileSync(mjmlFilePath, "utf8");
+	const mjmlTemplate = emailTemplate
+		.replace(/{{firstname}}/g, firstname)
+		.replace(/{{lastname}}/g, lastname);
+	const { html } = mjml2html(mjmlTemplate);
+	return html;
+}
+
 export async function registerUser(userDatas, bcrypt) {
 	if (!userDatas) {
 		return { error: "Aucune donnée à enregistrer" };
@@ -101,34 +122,23 @@ export async function registerUser(userDatas, bcrypt) {
 		const newUser = await User.create(user);
 
 	// Send mail
-	try {
-		const transporter = nodemailer.createTransport({
-			service: "gmail",
-			auth: {
-			user: "kenza.schuler@gmail.com",
-			pass: "nxtf cqmm lrlz wqed"
-			},
-		});
-		const url = `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`;
+	if (newUser) {
+		const transporter = createTransporter();
 
-		await transporter.sendMail({
-			from: `"Kenza" <${"kenza.schuler@gmail.com"}>`,
+		const mailOptions = {
+			from: 'kenza.schuler@gmail.com',
 			to: newUser.email,
-			subject: "Confirmation d'inscription",
-			html: `<p>Bonjour ${newUser.firstname},</p>
-				<p>Merci pour ton inscription 🥰</p>
-				<p>👉 <a href="${url}" target="_blank">Active ton compte</a></p>`,
-		});
-
-		console.log("✅ Email de confirmation envoyé à :", newUser.email);
-
-	} catch (error) {
-		console.log(error);
-		return {
-			error: "Échec de la création du compte : impossible d'envoyer un mail",
-			errorCode: "CANNOT_SEND_MAIL",
-			status: 500,
+			subject: 'Confirmation d\'inscription',
+			html: getMJMLTemplate(newUser.firstname, `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`),
 		};
+
+		try {
+			await transporter.sendMail(mailOptions);
+			console.log("Email de confirmation envoyé avec succès.");
+		} catch (error) {
+			console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
+			// tu peux aussi logger cette erreur pour la gestion des erreurs
+		}
 	}
 
 	return newUser;
