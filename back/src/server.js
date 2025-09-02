@@ -45,11 +45,11 @@ await app
 		saltWorkFactor: 12,
 	})
 	.register(cors, {
-		origin: "*",
+		origin: "https://jeu-de-kenza.vercel.app",
 	})
 	.register(socketioServer, {
 		cors: {
-			origin: "*",
+			origin: "https://jeu-de-kenza.vercel.app",
 		},
 	})
 	.register(fastifySwagger, {
