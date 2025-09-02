@@ -106,8 +106,8 @@ export async function registerUser(userDatas, bcrypt) {
 		  "no-reply@trial-jy7zpl9o2vpl5vx6.mlsender.net",
 		  "Kenza SCHULER"
 		);
-		const recipients = [new Recipient(newUser.email, `${newUser.firstname} ${newUser.lastName}`)];
-		const url = `${process.env.APP_FRONT_URL}/verify/${newUser.verifiedtoken}`;
+		const recipients = [new Recipient(newUser.email, `${newUser.firstname} ${newUser.lastname}`)];
+		const url = `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`;
 		const html = `<a href="${url}" target="_blank">Activer mon compte</a>`;
 		const params = new EmailParams()
 		  .setFrom(sender)

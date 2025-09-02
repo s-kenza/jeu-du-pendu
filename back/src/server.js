@@ -703,7 +703,7 @@ const start = async () => {
 		);
 		console.log(
 			chalk.bgYellow(
-				`Accéder à la documentation sur ${BACKEND_URL}/documentation`
+				`Accéder à la documentation sur https://jeu-du-pendu-backend.up.railway.app/documentation`
 			)
 		);
 	} catch (err) {
