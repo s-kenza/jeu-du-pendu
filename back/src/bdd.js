@@ -10,7 +10,7 @@ dotenv.config();
 export const sequelize = new Sequelize({
 	dialect: MySqlDialect,
 	database: process.env.MYSQLDATABASE,
-	user: process.env.MYSQLUSER,
+	username: process.env.MYSQLUSER,
 	password: process.env.MYSQLPASSWORD,
 	host: process.env.MYSQLHOST,
 	port: process.env.MYSQLPORT || 3306,
