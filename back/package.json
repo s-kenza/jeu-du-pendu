@@ -1,9 +1,9 @@
 {
-	"name": "lotr-jdr-api",
+	"name": "pendu-api",
 	"version": "1.0.0",
-	"description": "API pour le jeu de rôle LOTR",
+	"description": "API pour le jeu du pendu",
 	"main": "index.js",
-	"author": "haudrey.dev",
+	"author": "kenza.schuler",
 	"type": "module",
 	"dependencies": {
 		"@fastify/cors": "^10.0.0",

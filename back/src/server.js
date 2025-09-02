@@ -30,7 +30,8 @@ try {
 	console.error("Impossible de se connecter, erreur suivante :", error);
 }
 
-const BACKEND_URL = "http://localhost:3000";
+const PORT = process.env.PORT || 3000;
+const BACKEND_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 
 /**
  * API
@@ -55,7 +56,7 @@ await app
 		openapi: {
 			openapi: "3.0.0",
 			info: {
-				title: "Documentation de l'API JDR LOTR",
+				title: "Documentation de l'API PENDU",
 				description:
 					"API développée pour un exercice avec React avec Fastify et Sequelize",
 				version: "0.1.0",
@@ -65,7 +66,7 @@ await app
 	.register(fastifySwaggerUi, {
 		routePrefix: "/documentation",
 		theme: {
-			title: "Docs - JDR LOTR API",
+			title: "Docs - PENDU API",
 		},
 		uiConfig: {
 			docExpansion: "list",
@@ -695,7 +696,7 @@ const start = async () => {
 					error
 				);
 			});
-		await app.listen({ port: 3000 });
+		await app.listen({ port: PORT, host: "0.0.0.0" });
 		await ensureWordsTableFilled();
 		console.log(
 			"Serveur Fastify lancé sur " + chalk.blue(BACKEND_URL)
