@@ -8,7 +8,7 @@ import mjml2html from 'mjml';
 import path from 'path';
 import fs from 'fs/promises';
 import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
-import emailjs from '@emailjs/browser';
+import emailjs from '@emailjs/nodejs';
 
 const mailerSend = new MailerSend({
 	apiKey: process.env.MAIL_TOKEN,

@@ -6,7 +6,7 @@
 	"author": "kenza.schuler",
 	"type": "module",
 	"dependencies": {
-		"@emailjs/browser": "^4.4.1",
+		"@emailjs/nodejs": "^5.0.2",
 		"@fastify/cors": "^10.0.0",
 		"@fastify/jwt": "^9.0.0",
 		"@fastify/swagger": "^9.0.0",
