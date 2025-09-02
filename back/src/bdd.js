@@ -9,9 +9,9 @@ dotenv.config();
  */
 export const sequelize = new Sequelize({
 	dialect: MySqlDialect,
-	database: process.env.MYSQLDATABASE,
-	username: process.env.MYSQLUSER,
-	password: process.env.MYSQLPASSWORD,
-	host: process.env.MYSQLHOST,
-	port: process.env.MYSQLPORT || 3306,
+	database: "railway",
+	user: "root",
+	password: "lHJpFxnkPvygBvNRaPLQLgpXatFhuqXN",
+	host: "mysql.railway.internal",
+	port: 3306,
 });
