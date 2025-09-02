@@ -8,6 +8,7 @@ import mjml2html from 'mjml';
 import path from 'path';
 import fs from 'fs/promises';
 import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
+import emailjs from '@emailjs/browser';
 
 const mailerSend = new MailerSend({
 	apiKey: process.env.MAIL_TOKEN,
@@ -102,27 +103,28 @@ export async function registerUser(userDatas, bcrypt) {
 
 	// Send mail
 	try {
-		const sender = new Sender(
-		  "no-reply@trial-jy7zpl9o2vpl5vx6.mlsender.net",
-		  "Kenza SCHULER"
-		);
-		const recipients = [new Recipient(newUser.email, `${newUser.firstname} ${newUser.lastname}`)];
-		const url = `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`;
-		const html = `<a href="${url}" target="_blank">Activer mon compte</a>`;
-		const params = new EmailParams()
-		  .setFrom(sender)
-		  .setTo(recipients)
-		  .setSubject("Confirmation d'inscription")
-		  .setHtml(html);
-		await mailerSend.email.send(params);
-	  } catch (error) {
+		const response = await emailjs.send(
+			"service_s0f6a69",
+			"template_po35zvd",
+			{
+				to_name: `${newUser.firstname} ${newUser.lastname}`,
+				to_email: newUser.email,
+				verify_link: `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`
+			},
+			{
+				publicKey: "5OYtZY-tW0uqgfNji",
+				privateKey: "Joe0ZldeuQz-r23g4-mfp"
+			}
+		)
+		console.log("Email envoyé !", response);
+	} catch (error) {
 		console.log(error);
 		return {
-		  error: "Échec de la création du compte : impossible d'envoyer un mail",
-		  errorCode: "CANNOT_SEND_MAIL",
-		  status: 500,
+			error: "Échec de la création du compte : impossible d'envoyer un mail",
+			errorCode: "CANNOT_SEND_MAIL",
+			status: 500,
 		};
-	  }
+	}
 
 	return newUser;
 }
