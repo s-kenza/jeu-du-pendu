@@ -6,12 +6,12 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import mjml2html from 'mjml';
 import path from 'path';
-import fs from 'fs/promises';
+import * as fs from 'fs';
 import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
 
 const mailerSend = new MailerSend({
 	apiKey: process.env.MAIL_TOKEN,
-}); 
+});
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -69,7 +69,7 @@ function createTransporter() {
 
 function getMJMLTemplate(firstname) {
 	const mjmlFilePath = "./src/templates/verification.mjml";
-	const emailTemplate = fs.readFileSync(mjmlFilePath, "utf8");
+	const emailTemplate = fs.readFileSync(mjmlFilePath, { encoding: "utf-8" });
 	const mjmlTemplate = emailTemplate
 		.replace(/{{firstname}}/g, firstname)
 		.replace(/{{lastname}}/g, lastname);
@@ -119,7 +119,7 @@ export async function registerUser(userDatas, bcrypt) {
 		verifiedtoken: generateToken,
 	};
 
-		const newUser = await User.create(user);
+	const newUser = await User.create(user);
 
 	// Send mail
 	if (newUser) {
