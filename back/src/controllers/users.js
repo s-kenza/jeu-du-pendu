@@ -67,12 +67,13 @@ function createTransporter() {
 	});
 }
 
-function getMJMLTemplate(firstname) {
+function getMJMLTemplate(firstname, lastname, verifiedToken) {
 	const mjmlFilePath = "./src/templates/verification.mjml";
 	const emailTemplate = fs.readFileSync(mjmlFilePath, { encoding: "utf-8" });
 	const mjmlTemplate = emailTemplate
 		.replace(/{{firstname}}/g, firstname)
-		.replace(/{{lastname}}/g, lastname);
+		.replace(/{{lastname}}/g, lastname)
+		.replace(/{{verifiedToken}}/g, verifiedToken);
 	const { html } = mjml2html(mjmlTemplate);
 	return html;
 }
@@ -129,7 +130,7 @@ export async function registerUser(userDatas, bcrypt) {
 			from: 'kenza.schuler@gmail.com',
 			to: newUser.email,
 			subject: 'Confirmation d\'inscription',
-			html: getMJMLTemplate(newUser.firstname, `https://jeu-de-kenza.vercel.app/verify/${newUser.verifiedtoken}`),
+			html: getMJMLTemplate(newUser.firstname, newUser.lastname, newUser.verifiedtoken),
 		};
 
 		try {
