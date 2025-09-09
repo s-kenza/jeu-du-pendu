@@ -30,8 +30,8 @@ try {
 	console.error("Impossible de se connecter, erreur suivante :", error);
 }
 
-const PORT = process.env.PORT || 3000;
-const BACKEND_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+const PORT = process.env.PORT;
+const BACKEND_URL = process.env.PUBLIC_URL;
 
 /**
  * API
@@ -143,21 +143,21 @@ const initializeRoomState = (roomId) => {
   const updateGuessedLetter = (roomId, letter, playerId) => {
 	const room = roomState.get(roomId);
 	if (!room) return null;
-  
+
 	const result = {
 	  isCorrect: false,
 	  updatedHiddenWord: room.hiddenWord,
 	  foundPositions: [],
 	  gameOver: false
 	};
-  
+
 	// Ajouter la lettre aux lettres devinées
 	room.guessedLetters.push(letter);
-  
+
 	// Vérifier si la lettre est dans le mot
 	const wordArray = room.wordToGuess.split('');
 	let newHiddenWord = room.hiddenWord.split(' ');
-  
+
 	wordArray.forEach((char, index) => {
 	  if (char.toLowerCase() === letter.toLowerCase()) {
 		result.isCorrect = true;
@@ -165,28 +165,28 @@ const initializeRoomState = (roomId) => {
 		newHiddenWord[index] = letter;
 	  }
 	});
-  
+
 	// Mettre à jour le mot caché
 	room.hiddenWord = newHiddenWord.join(' ');
 	result.updatedHiddenWord = room.hiddenWord;
-  
+
 	// Vérifier si le mot est complet
 	if (room.hiddenWord.replace(/ /g, '').toLowerCase() === room.wordToGuess.toLowerCase()) {
 	  result.gameOver = true;
 	  room.scores[playerId] = (room.scores[playerId] || 0) + 1;
 	}
-  
+
 	// Sauvegarder les changements
 	roomState.set(roomId, room);
-  
+
 	return result;
   };
-  
+
   // Fonction pour récupérer l'état actuel d'une room
 const getRoomState = (roomId) => {
 	const room = roomState.get(roomId);
 	if (!room) return null;
-  
+
 	return {
 	  ...room,
 	  guessedLetters: Array.from(room.guessedLetters), // Convertir le Set en Array pour la transmission
@@ -194,23 +194,23 @@ const getRoomState = (roomId) => {
 	  canGuessWord: countRemainingLetters(room.hiddenWord) <= 3
 	};
 };
-  
+
   // Fonction pour vérifier si une lettre a déjà été devinée
   const isLetterAlreadyGuessed = (roomId, letter) => {
 	const room = roomState.get(roomId);
 	return room ? room.guessedLetters.has(letter) : false;
   };
-  
+
   // Fonction pour sauvegarder l'état complet de la partie
   const saveGameState = (roomId) => {
 	const room = roomState.get(roomId);
 	if (!room) return;
-  
+
 	const gameState = {
 	  ...room,
 	  lastSaved: Date.now()
 	};
-  
+
 	console.log(`État de la partie sauvegardé pour la room ${roomId}:`, gameState);
 	return gameState;
   };
@@ -223,12 +223,12 @@ app.io.on("connection", (socket) => {
 		console.log('UserId côté serveur:', userId);
 
 		const existingRoom = roomState.get(roomId);
-	
+
 		if (!roomState.has(roomId)) {
 			// Créer une nouvelle room
 			roomState.set(roomId, initializeRoomState(roomId));
 		}
-	
+
 		const players = roomState.get(roomId);
 		const room = roomState.get(roomId);
 		if (!room.wordGuessed) {
@@ -240,7 +240,7 @@ app.io.on("connection", (socket) => {
 		if (isAlreadyInRoom) {
 			console.log(`L'utilisateur ${userId} est déjà dans la room ${roomId}`);
 			socket.emit('alreadyInRoom', { message: 'Vous êtes déjà dans cette partie.' });
-			
+
 			// Si la partie est en cours, renvoyer l'état actuel au joueur qui revient
 			if (room.wordToGuess) {
 				socket.emit('gameRejoined', {
@@ -257,13 +257,13 @@ app.io.on("connection", (socket) => {
 		}
 
 		console.log('players:', players.players);
-	
+
 		if (players.players.length >= 2) {
 			// Si la room est pleine, envoyer un événement au client
 			socket.emit('roomFull', { message: 'La partie est pleine.' });
 			return;
 		}
-	
+
 		// Mettre à jour le socketId du joueur s'il revient
 		const playerIndex = room.players.findIndex(p => p.userId === userId);
 		if (playerIndex !== -1) {
@@ -275,10 +275,10 @@ app.io.on("connection", (socket) => {
 		console.log(`User ${userId} a rejoint la room ${roomId}`);
 		console.log('roomState joueurs:', roomState.get(roomId).players);
 		console.log('taille roomState joueurs:', roomState.get(roomId).players.length);
-	
+
 		// Notifier le joueur qu'il a rejoint la room
 		socket.emit('roomJoined', { roomId, userId });
-	
+
 		// Initialiser les scores pour la base de données
 		try {
 			const score = await createScore(userId, roomId);
@@ -286,7 +286,7 @@ app.io.on("connection", (socket) => {
 		} catch (error) {
 			console.error("Erreur lors de l'initialisation du score :", error);
 		}
-	
+
 		// Si 2 joueurs sont dans la room, démarrer la partie
 		if (players.players.length === 2 && !room.wordToGuess) {
 			const startingPlayer = players.players[Math.floor(Math.random() * players.players.length)].userId;
@@ -305,25 +305,25 @@ app.io.on("connection", (socket) => {
 			} catch (error) {
 				console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
 			}
-	
+
 			// Générer un mot aléatoire
 			const randomWord = await generateRandomWord();
 			if (!randomWord) {
 				console.error("Aucun mot n'a été généré.");
 				return;
 			}
-	
+
 			roomWords.set(roomId, randomWord);
 			const wordToGuess = randomWord.dataValues.name;
 
 			room.wordGuessed.push(wordToGuess);
-	
+
 			console.log(`Le mot à deviner est : ${wordToGuess}`);
-	
+
 			app.io.to(roomId).emit('startingPlayer', startingPlayer);
 			app.io.to(roomId).emit('gameStart', { roomId, word: wordToGuess });
 			console.log(`La partie commence dans la room ${roomId} avec ${startingPlayer} qui commence`);
-	
+
 			// Initialisation d'une salle
 			const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); // Mot caché (avec des underscores)
 			const guessedLetters = []; // Liste des lettres devinées
@@ -331,7 +331,7 @@ app.io.on("connection", (socket) => {
 			players.players.forEach(player => {
 				scores[player.userId] = 0;
 			});
-	
+
 			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players: players.players, scores, wordGuessed: room.wordGuessed });
 		} else if (room.players.length === 2 && room.wordToGuess) {
 			// Si la partie est en cours, envoyer l'état actuel au joueur qui rejoint
@@ -344,7 +344,7 @@ app.io.on("connection", (socket) => {
 				penalties: room.penalties
 			});
 		}
-	});	
+	});
 
 	socket.on('gameStartAction', ({ roomId, word }) => {
 		console.log(`Le jeu commence dans la room ${roomId} avec le mot ${word}`);
@@ -354,21 +354,21 @@ app.io.on("connection", (socket) => {
 	socket.on('submitLetter', async ({ roomId, playerId, letter, penalties, playerIdPenalized }) => {
 		const room = roomState.get(roomId);
 		if (!room) return;
-	
+
 		// Vérifier si la lettre a déjà été devinée
 		if (room.guessedLetters.includes(letter)) {
 			socket.emit('letterAlreadyGuessed', { letter });
 			return;
 		}
-	
+
 		// Mettre à jour l'état avec la nouvelle lettre
 		const result = updateGuessedLetter(roomId, letter, playerId);
 		if (!result) return;
-	
+
 		// Gérer le cas où le jeu est terminé (mot trouvé)
 		if (result.gameOver) {
 			const looser = getLooserPlayer(room, playerId);
-			
+
 			// Mettre à jour la base de données
 			try {
 				const game = await Game.findOne({ where: { id: roomId } });
@@ -378,7 +378,7 @@ app.io.on("connection", (socket) => {
 					await game.save();
 					console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId} avec pour gagnant ${playerId}`);
 				}
-	
+
 				const score = await Scores.findOne({ where: { playerId: playerId, gameId: roomId } });
 				if (score) {
 					score.score = room.scores[playerId];
@@ -388,24 +388,24 @@ app.io.on("connection", (socket) => {
 			} catch (error) {
 				console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
 			}
-	
+
 			// Émettre les événements de fin de partie
-			app.io.to(roomId).emit('gameWon', { 
-				winner: playerId, 
-				looser: looser, 
-				word: room.wordToGuess, 
-				scores: room.scores 
+			app.io.to(roomId).emit('gameWon', {
+				winner: playerId,
+				looser: looser,
+				word: room.wordToGuess,
+				scores: room.scores
 			});
-			app.io.to(roomId).emit('gameEnded', { 
-				winner: playerId, 
-				scores: room.scores 
+			app.io.to(roomId).emit('gameEnded', {
+				winner: playerId,
+				scores: room.scores
 			});
 			return;
 		}
-	
+
 		// Gérer le tour suivant
 		let nextPlayerId = getNextPlayer(room, playerId).userId;
-	
+
 		// Gérer les pénalités
 		if (penalties && penalties[playerIdPenalized] > 0) {
 			penalties[playerIdPenalized] -= 1;
@@ -420,27 +420,27 @@ app.io.on("connection", (socket) => {
 				nextPlayerId = getNextPlayer(room, playerId).userId;
 			}
 		}
-	
+
 		// Calculer si le bouton de devinette doit être affiché
 		const remainingLetters = countRemainingLetters(result.updatedHiddenWord);
 		const showGuessButton = remainingLetters <= 3 && remainingLetters > 0;
-	
+
 		console.log('nextPlayerId:', nextPlayerId);
 
 		// Émettre les événements de mise à jour
 		app.io.to(roomId).emit('letterGuessed', { letter });
-		app.io.to(roomId).emit('nextTurn', { 
-			playerId: nextPlayerId, 
-			updatedHiddenWord: result.updatedHiddenWord, 
+		app.io.to(roomId).emit('nextTurn', {
+			playerId: nextPlayerId,
+			updatedHiddenWord: result.updatedHiddenWord,
 			showGuessButton: showGuessButton,
 			penalties: penalties,
 			playerIdPenalized: playerIdPenalized
 		});
-	
+
 		// Sauvegarder l'état final de la partie
 		saveGameState(roomId);
 	});
-	
+
 	// Fonctions utilitaires
 	const getLooserPlayer = (room, winnerId) => {
 		if (Array.isArray(room.players)) {
@@ -450,33 +450,33 @@ app.io.on("connection", (socket) => {
 		}
 		return null;
 	};
-	
+
 	const getNextPlayer = (room, currentPlayerId) => {
 		const players = Array.isArray(room.players) ? room.players : room.players.players;
 		return players.find(player => player.userId !== currentPlayerId);
 	};
 
-	socket.on('playerWantsReplay', async ({ playerId, roomId }) => { 
+	socket.on('playerWantsReplay', async ({ playerId, roomId }) => {
 		console.log(`Joueur ${playerId} veut rejouer`);
-	
+
 		const room = roomState.get(roomId);
 		const players = room ? room.players : [];
 		const currentScores = room ? room.scores : {};
-		
+
 		if (!playersReadyInRoom[roomId]) {
 			playersReadyInRoom[roomId] = [];
 		}
-	
+
 		if (!playersReadyInRoom[roomId].includes(playerId)) {
 			playersReadyInRoom[roomId].push(playerId);
 		}
-		
+
 		app.io.to(roomId).emit('updateReplayStatus', { playerId });
-	
+
 		if (playersReadyInRoom[roomId].length === 2) {
 			const startingPlayer = playerId;
 			console.log('startingPlayer:', startingPlayer);
-			
+
 			// Mise à jour de l'état du jeu à "playing" dans la base de données
 			try {
 				const game = await Game.findOne({ where: { id: roomId } });
@@ -488,49 +488,49 @@ app.io.on("connection", (socket) => {
 			} catch (error) {
 				console.error("Erreur lors de la mise à jour de l'état du jeu :", error);
 			}
-	
+
 			// Générer un mot aléatoire
 			const randomWord = await generateRandomWord(room.wordGuessed);
 			if (!randomWord) {
 				console.error("Aucun mot n'a été généré.");
 				return;
 			}
-	
+
 			roomWords.set(roomId, randomWord);
 			const wordToGuess = randomWord.dataValues.name;
 
 			room.wordGuessed.push(wordToGuess);
-	
+
 			console.log(`Le mot à deviner est : ${wordToGuess}`);
-	
+
 			app.io.to(roomId).emit('startingPlayer', startingPlayer);
 			app.io.to(roomId).emit('gameStart', { roomId, word: wordToGuess });
 			console.log(`La partie commence dans la room ${roomId} avec ${startingPlayer} qui commence`);
-		
+
 			// Initialisation d'une salle
 			const hiddenWord = "_ ".repeat(wordToGuess.length).trim(); // Mot caché (avec des underscores)
 			const guessedLetters = []; // Liste des lettres devinées
-			
+
 			// Ajout du score accumulé à la partie précédente
 			const scores = {};
-	
+
 			// Vérifie si players est déjà un tableau
 			const playersList = Array.isArray(players) ? players : players.players;
-	
+
 			playersList.forEach(player => {
 				scores[player.userId] = currentScores[player.userId] || 0;
 			});
-	
+
 			roomState.set(roomId, { wordToGuess, hiddenWord, guessedLetters, players: playersList, scores, wordGuessed: room.wordGuessed });
-	
+
 			app.io.to(roomId).emit('bothPlayersReady');
 			// Réinitialiser les joueurs prêts
 			playersReadyInRoom[roomId] = [];
 		}
 		console.log('roomState:', roomState);
 	});
-	
-	socket.on('submitWordGuess', async ({ roomId, playerId, wordGuess }) => {		
+
+	socket.on('submitWordGuess', async ({ roomId, playerId, wordGuess }) => {
 		const room = roomState.get(roomId);
 		if (!room) return;
 
@@ -541,13 +541,13 @@ app.io.on("connection", (socket) => {
 		let looser;
 
 		console.log(`Le joueur ${playerId} a deviné le mot ${wordGuess} dans la room ${roomId}`);
-	
+
 		const { wordToGuess, hiddenWord, guessedLetters } = room;
-	
+
 		if (wordGuess.toLowerCase() === wordToGuess.toLowerCase()) {
 			// Incrémenter le score du joueur
 			room.scores[playerId] = (room.scores[playerId] || 0) + 1;
-	
+
 			// Mise à jour de l'état du jeu à "finished" dans la base de données
 			try {
 				const game = await Game.findOne({ where: { id: roomId } });
@@ -557,7 +557,7 @@ app.io.on("connection", (socket) => {
 					await game.save();
 					console.log(`L'état du jeu dans la base de données a été mis à jour à "finished" pour la game ${roomId} avec pour gagnant ${playerId}`);
 				}
-	
+
 				const score = await Scores.findOne({ where: { playerId: playerId, gameId: roomId } });
 				if (score) {
 					score.score = room.scores[playerId];
@@ -575,7 +575,7 @@ app.io.on("connection", (socket) => {
 				// Cas où players est un objet contenant un tableau 'players'
 				looser = room.players.players.find(player => player.userId !== playerId).userId;
 			}
-	
+
 			app.io.to(roomId).emit('gameWon', { winner: playerId, looser: looser, word: wordToGuess, scores: room.scores });
 			app.io.to(roomId).emit('gameEnded', { winner: playerId, scores: room.scores });
 		} else {
@@ -591,7 +591,7 @@ app.io.on("connection", (socket) => {
 
 	socket.on('leaveRoom', ({ roomId, userId }) => {
 		console.log(`L'utilisateur ${userId} a quitté la room ${roomId}`);
-		
+
 		if (roomState.has(roomId)) {
 			const room = roomState.get(roomId);
 
@@ -607,7 +607,7 @@ app.io.on("connection", (socket) => {
 	// Écouter un événement de connexion de l'utilisateur avec son userId
 	socket.on('register', (userId) => {
 		console.log(`Utilisateur enregistré : ${userId}`);
-		
+
 		// Si l'utilisateur a un socket actif, déconnectez-le
 		if (activeUsers.has(userId)) {
 		  const oldSocketId = activeUsers.get(userId);
@@ -616,10 +616,10 @@ app.io.on("connection", (socket) => {
 			oldSocket.disconnect(); // Déconnecte l'ancien socket
 		  }
 		}
-	
+
 		// Enregistrer le nouvel ID socket
 		activeUsers.set(userId, socket.id);
-	
+
 		// Gérer la déconnexion
 		socket.on('disconnect', () => {
 			console.log(`Client déconnecté : ${socket.id}`);
@@ -703,7 +703,7 @@ const start = async () => {
 		);
 		console.log(
 			chalk.bgYellow(
-				`Accéder à la documentation sur https://jeu-du-pendu-backend.up.railway.app/documentation`
+				`Accéder à la documentation sur ${BACKEND_URL}/documentation`
 			)
 		);
 	} catch (err) {

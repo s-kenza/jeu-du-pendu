@@ -20,6 +20,7 @@
     "daisyui": "^4.12.12",
     "formik": "^2.4.6",
     "framer-motion": "^12.4.1",
+    "game-react": "file:",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.471.0",
     "mjml": "^4.15.3",
