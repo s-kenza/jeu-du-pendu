@@ -59,10 +59,12 @@ export async function findAndCountAllUsersByUsername(username) {
 
 function createTransporter() {
 	return nodemailer.createTransport({
-		service: 'gmail',
+		host: "smtp.gmail.com",
+		port: 465,
+		secure: true,
 		auth: {
-			user: "kenza.schuler@gmail.com",
-			pass: "nxtf cqmm lrlz wqed",
+			user: process.env.SMTP_TO_EMAIL,
+			pass: process.env.SMTP_TO_PASSWORD,
 		}
 	});
 }
