@@ -59,9 +59,12 @@ export async function findAndCountAllUsersByUsername(username) {
 
 function createTransporter() {
 	return nodemailer.createTransport({
-		host: "smtp.gmail.com",
-		port: 465,
-		secure: true,
+		host: process.env.SMTP_HOST,
+		port: process.env.SMTP_PORT,
+		secure: process.env.SMTP_SECURE,
+		tls: {
+			ciphers: process.env.SMTP_TLS_CIPHERS
+		},
 		auth: {
 			user: process.env.SMTP_TO_EMAIL,
 			pass: process.env.SMTP_TO_PASSWORD,
@@ -129,7 +132,7 @@ export async function registerUser(userDatas, bcrypt) {
 		const transporter = createTransporter();
 
 		const mailOptions = {
-			from: 'kenza.schuler@gmail.com',
+			from: process.env.SMTP_FROM_EMAIL,
 			to: newUser.email,
 			subject: 'Confirmation d\'inscription',
 			html: getMJMLTemplate(newUser.firstname, newUser.lastname, newUser.verifiedtoken),
