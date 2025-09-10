@@ -4,7 +4,6 @@ import crypto from "crypto";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Resend } from 'resend';
-import ConfirmEmail from '../templates/confirmationMail.tsx'
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -57,7 +56,7 @@ function sendEmail() {
 	  from: 'onboarding@resend.dev',
 	  to: 'kenza.schuler@gmail.com',
 	  subject: 'Hello World',
-	  html: { ConfirmEmail }
+	  html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
 	});
 }
 
