@@ -21,6 +21,7 @@
 		"mysql2": "^3.11.3",
 		"nodemailer": "^7.0.6",
 		"pendu-api": "file:",
+		"resend": "^6.0.3",
 		"sequelize": "^6.37.3",
 		"socket.io": "^4.8.0"
 	},

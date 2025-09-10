@@ -7,11 +7,7 @@ import { dirname } from 'path';
 import mjml2html from 'mjml';
 import path from 'path';
 import * as fs from 'fs';
-import { EmailParams, MailerSend, Recipient, Sender } from "mailersend";
-
-const mailerSend = new MailerSend({
-	apiKey: process.env.MAIL_TOKEN,
-});
+import { Resend } from 'resend';
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -83,6 +79,17 @@ function getMJMLTemplate(firstname, lastname, verifiedToken) {
 	return html;
 }
 
+const resend = new Resend('re_8cUce6e4_8713GKcbFecTD66qnnVFQDJC');
+
+function sendEmail() {
+	return resend.emails.send({
+	  from: 'onboarding@resend.dev',
+	  to: 'kenza.schuler@gmail.com',
+	  subject: 'Hello World',
+	  html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
+	});
+}
+
 export async function registerUser(userDatas, bcrypt) {
 	if (!userDatas) {
 		return { error: "Aucune donnée à enregistrer" };
@@ -129,24 +136,14 @@ export async function registerUser(userDatas, bcrypt) {
 
 	// Send mail
 	if (newUser) {
-		const transporter = createTransporter();
-
-		const mailOptions = {
-			from: process.env.SMTP_FROM_EMAIL,
-			to: newUser.email,
-			subject: 'Confirmation d\'inscription',
-			html: getMJMLTemplate(newUser.firstname, newUser.lastname, newUser.verifiedtoken),
-		};
-
 		try {
-			await transporter.sendMail(mailOptions);
+			await sendEmail();
 			console.log("Email de confirmation envoyé avec succès.");
 		} catch (error) {
 			console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
-			// tu peux aussi logger cette erreur pour la gestion des erreurs
+			return false;
 		}
 	}
-
 	return newUser;
 }
 export async function loginUser(userDatas, app) {
