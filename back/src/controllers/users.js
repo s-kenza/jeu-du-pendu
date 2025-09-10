@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Resend } from 'resend';
-import ConfirmEmail from '../templates/confirmationMail.js'
+import ConfirmEmail from '../templates/confirmationMail.tsx'
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
