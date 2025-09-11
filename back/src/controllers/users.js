@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Resend } from 'resend';
-import ConfirmEmail from '../templates/emails/ConfirmationEmail';
+import fs from 'fs';
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -52,12 +52,14 @@ export async function findAndCountAllUsersByUsername(username) {
 
 const resend = new Resend('re_8cUce6e4_8713GKcbFecTD66qnnVFQDJC');
 
-function sendEmail(verifiedtoken) {
-	const html = render(<ConfirmEmail verifiedToken={verifiedtoken} />);
+function sendEmail(to, verifiedtoken) {
+	let html = fs.readFileSync("../templates/emails/confirmation.html", "utf-8");
+	html = html.replace("{{TOKEN}}", verifiedtoken);
+
 	return resend.emails.send({
 	  from: 'onboarding@resend.dev',
-	  to: 'kenza.schuler@gmail.com',
-	  subject: 'Hello World',
+	  to: to,
+	  subject: '👋 Confirmez votre inscription',
 	  html: html
 	});
 }
@@ -109,7 +111,7 @@ export async function registerUser(userDatas, bcrypt) {
 	// Send mail
 	if (newUser) {
 		try {
-			await sendEmail(newUser.verifiedtoken);
+			await sendEmail(newUser.email, newUser.verifiedtoken);
 			console.log("Email de confirmation envoyé avec succès.");
 		} catch (error) {
 			console.error("Erreur lors de l'envoi de l'email de confirmation:", error);

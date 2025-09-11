@@ -36,7 +36,7 @@ export const ConfirmEmail = ({ verifiedToken }) => (
         </Text>
         </Container>
 
-        <Link href={`https://jeu-de-kenza.vercel.app/verify/${verifiedToken}`}>
+        <Link href="https://jeu-de-kenza.vercel.app/verify/{{TOKEN}}">
           <Section style={codeBox}>
             <Text style={confirmationCodeText}>👉 Cliquez ici pour vous inscrire 👈</Text>
           </Section>
@@ -91,10 +91,6 @@ export const ConfirmEmail = ({ verifiedToken }) => (
     </Body>
   </Html>
 );
-
-ConfirmEmail.PreviewProps = {
-  validationURL: '',
-} as ConfirmEmailProps;
 
 export default ConfirmEmail;
 
