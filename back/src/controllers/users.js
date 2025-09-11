@@ -53,14 +53,15 @@ export async function findAndCountAllUsersByUsername(username) {
 const resend = new Resend('re_8cUce6e4_8713GKcbFecTD66qnnVFQDJC');
 
 function sendEmail(to, verifiedtoken) {
-	let html = fs.readFileSync("../templates/emails/confirmation.html", "utf-8");
+	const templatePath = path.resolve(__dirname, "../templates/emails/confirmation.html");
+	let html = fs.readFileSync(templatePath, "utf-8");
 	html = html.replace("{{TOKEN}}", verifiedtoken);
 
 	return resend.emails.send({
 	  from: 'onboarding@resend.dev',
-	  to: to,
+	  to,
 	  subject: '👋 Confirmez votre inscription',
-	  html: html
+	  html,
 	});
 }
 
