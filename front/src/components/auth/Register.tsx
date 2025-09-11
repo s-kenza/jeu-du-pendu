@@ -1,8 +1,9 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import ToastNotification from './ToastNotification';
 
 
 const BasicForm = () => {
@@ -10,6 +11,7 @@ const BasicForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const navigate = useNavigate();
 
@@ -17,7 +19,7 @@ const BasicForm = () => {
   const handleSubmit = async (values: any, { setSubmitting, setErrors }: { setSubmitting: (isSubmitting: boolean) => void, setErrors: (errors: any) => void }) => {
     try {
       console.log("Données d'inscription envoyées:", values);
-  
+
       const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
         headers: {
@@ -25,19 +27,19 @@ const BasicForm = () => {
         },
         body: JSON.stringify(values),
       });
-  
+
       const data = await response.json();
       console.log("Réponse du serveur:", data);
-  
+
       if (response.ok) {
         setErrorMessage('');
-        navigate('/login', { 
-          state: { message: 'Inscription réussie. Veuillez vérifier votre email.' } 
+        navigate('/login', {
+          state: { message: 'Inscription réussie. Veuillez vérifier votre email.' }
         });
       } else {
         // Gestion des différentes erreurs possibles du backend
         setErrorMessage(data.error);
-        
+
         // Gestion spécifique des erreurs par champ
         switch (data.error) {
           case "Tous les champs sont obligatoires":
@@ -58,6 +60,8 @@ const BasicForm = () => {
             setErrors({
               username: "Ce nom d'utilisateur est déjà pris"
             });
+          case "Impossible d’envoyer l’email de confirmation. Réessayez plus tard.":
+            setToastMessage(data.error);
             break;
         }
         setLoading(false);
@@ -98,17 +102,18 @@ const BasicForm = () => {
     </dialog>
 
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
+      <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
         <h1 className="font-bold text-center text-2xl mb-5">Inscription au jeu</h1>
         <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
           <Formik
-            initialValues={{ 
-              email: '', 
-              password: '', 
-              confirmPassword: '', 
+            initialValues={{
+              email: '',
+              password: '',
+              confirmPassword: '',
               firstname: '',
               lastname: '',
-              username: '' 
+              username: ''
             }}
             validationSchema={Yup.object({
               email: Yup.string().email('Adresse e-mail invalide').required('Champ requis'),
@@ -143,7 +148,7 @@ const BasicForm = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-4 h-4 inline-block">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
-                  } 
+                  }
                 </button>
               </Form>
             )}
@@ -158,17 +163,17 @@ const BasicForm = () => {
                     type="button"
                     className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                       className="w-4 h-4 inline-block align-text-bottom">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                       />
                     </svg>
                     <span className='inline-block ml-1'>Déjà inscrit ? Je me connecte</span>

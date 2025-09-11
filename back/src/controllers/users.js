@@ -106,19 +106,16 @@ export async function registerUser(userDatas, bcrypt) {
 		verifiedtoken: generateToken,
 	};
 
-	const newUser = await User.create(user);
-
 	// Send mail
-	if (newUser) {
-		try {
-			await sendEmail(newUser.email, newUser.verifiedtoken);
-			console.log("Email de confirmation envoyé avec succès.");
-		} catch (error) {
-			console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
-			return false;
-		}
+	try {
+		await sendEmail(user.email, user.verifiedtoken);
+		console.log("Email de confirmation envoyé avec succès.");
+		const newUser = await User.create(user);
+		return newUser;
+	} catch (error) {
+		console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
+		return { error: "Impossible d’envoyer l’email de confirmation. Réessayez plus tard." };
 	}
-	return newUser;
 }
 export async function loginUser(userDatas, app) {
 	if (!userDatas) {
