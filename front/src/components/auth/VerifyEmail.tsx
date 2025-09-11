@@ -24,7 +24,7 @@ const VerifyEmail = () => {
             const data = await response.json()
             if (response.ok) {
                 console.log('Success:', data)
-                navigate('/login', { state: { message: 'Votre email a bien été vérifié, vous pouvez maintenant vous connecter' } })
+                navigate('/login', { state: { message: 'Votre email a bien été vérifié, vous pouvez maintenant vous connecter ☀️' } })
             } else {
                 console.error('Error:', data)
                 setError(data.error)

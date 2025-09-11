@@ -35,7 +35,7 @@ const BasicForm = () => {
       if (response.ok) {
         setErrorMessage('');
         navigate('/login', {
-          state: { message: 'Inscription réussie. Veuillez vérifier votre email.' }
+          state: { message: 'Inscription réussie. Veuillez vérifier vos mails !' }
         });
         setToastType("success");
       } else {
