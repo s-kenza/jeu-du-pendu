@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Resend } from 'resend';
 import fs from 'fs';
+import path from 'path';
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
