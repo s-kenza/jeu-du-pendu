@@ -12,20 +12,10 @@ import {
   Section,
   Text,
 } from '@react-email/components';
-import Github from '../assets/github.png';
-import Linkedin from '../assets/linkedin.png';
 
-interface ConfirmEmailProps {
-  validationCode?: string;
-}
+const baseUrl = '';
 
-const baseUrl = process.env.VERCEL_URL
-  ? `https://${process.env.VERCEL_URL}`
-  : '';
-
-export const ConfirmEmail = ({
-  validationCode,
-}: ConfirmEmailProps) => (
+export const ConfirmEmail = ({ verifiedToken }) => (
   <Html>
     <Head />
     <Body style={main}>
@@ -33,20 +23,24 @@ export const ConfirmEmail = ({
       <Container style={container}>
         <Section style={logoContainer}>
           <Img
-            src={`${baseUrl}/static/slack-logo.png`}
-            width="120"
-            height="36"
-            alt="Slack"
+            src='https://github.com/s-kenza/portfolio/blob/main/public/K.png?raw=true'
+            width="50"
+            height="50"
+            alt="Logo Kenza SCHULER"
           />
         </Section>
-        <Heading style={h1}>Votre lien magique</Heading>
-        <Text style={heroText}>
-          Pour confirmer votre inscription, cliquez sur le lien ci-dessous - vous serez redirigé sur Jeu de Kenza afin de vous y connecter.
+        <Heading style={h1}>🪄 Jeu du pendu</Heading>
+        <Container>
+          <Text style={heroText}>
+            Pour confirmer votre inscription, cliquez sur le lien ci-dessous.
         </Text>
+        </Container>
 
-        <Section style={codeBox}>
-          <Text style={confirmationCodeText}>{validationCode}</Text>
-        </Section>
+        <Link href={`https://jeu-de-kenza.vercel.app/verify/${verifiedToken}`}>
+          <Section style={codeBox}>
+            <Text style={confirmationCodeText}>👉 Cliquez ici pour vous inscrire 👈</Text>
+          </Section>
+        </Link>
 
         <Text style={text}>
           Si vous n'avez pas demandé à recevoir ce mail, ne vous inquiétez pas, vous pouvez
@@ -57,16 +51,16 @@ export const ConfirmEmail = ({
           <Row style={footerLogos}>
             <Column style={{ width: '66%' }}>
               <Img
-                src={`${baseUrl}/static/slack-logo.png`}
-                width="120"
-                height="36"
-                alt="Slack"
+                src='https://github.com/s-kenza/portfolio/blob/main/public/K.png?raw=true'
+                width="50"
+                height="50"
+                alt="Logo Kenza SCHULER"
               />
             </Column>
             <Column align="right">
               <Link href="https://github.com/s-kenza">
                 <Img
-                  src={Github}
+                  src='https://cdn.simpleicons.org/github/000000'
                   width="32"
                   height="32"
                   alt="Profil Github Kenza SCHULER"
@@ -75,10 +69,10 @@ export const ConfirmEmail = ({
               </Link>
               <Link href="https://www.linkedin.com/in/kenza-schuler-9aa4ab231/">
                 <Img
-                  src={Linkedin}
+                  src='https://img.icons8.com/?size=100&id=xuvGCOXi8Wyg&format=png&color=000000'
                   width="32"
                   height="32"
-                  alt="Profil LinkedIn Kenza SCHULER"
+                  alt="Profil Linkedin Kenza SCHULER"
                   style={socialMediaIcon}
                 />
               </Link>
@@ -99,7 +93,7 @@ export const ConfirmEmail = ({
 );
 
 ConfirmEmail.PreviewProps = {
-  validationCode: 'DJZ-TLX',
+  validationURL: '',
 } as ConfirmEmailProps;
 
 export default ConfirmEmail;
@@ -129,7 +123,7 @@ const socialMediaIcon = {
 };
 
 const main = {
-  backgroundColor: '#ffffff',
+  backgroundImage: 'linear-gradient(15deg,rgba(255, 255, 255, 1) 35%, rgba(133, 179, 255, 1) 60%, rgba(193, 157, 255, 1) 85%)',
   margin: '0 auto',
   fontFamily:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
@@ -139,6 +133,7 @@ const container = {
   margin: '0 auto',
   padding: '0px 20px',
 };
+
 
 const logoContainer = {
   marginTop: '32px',
@@ -160,16 +155,20 @@ const heroText = {
 };
 
 const codeBox = {
-  background: 'rgb(245, 244, 245)',
+  background: '#fdcae3ff',
   borderRadius: '4px',
   marginBottom: '30px',
   padding: '40px 10px',
+  boxShadow: 'rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px',
+  display: 'flex',
+  justifyContent: 'center',
 };
 
 const confirmationCodeText = {
   fontSize: '30px',
   textAlign: 'center' as const,
   verticalAlign: 'middle',
+  color: '#000'
 };
 
 const text = {

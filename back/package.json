@@ -33,6 +33,7 @@
 		"start": "node src/server.js"
 	},
 	"devDependencies": {
-		"react-email": "4.2.11"
+		"@react-email/preview-server": "^4.2.11",
+		"react-email": "^4.2.11"
 	}
 }

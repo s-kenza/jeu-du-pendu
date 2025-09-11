@@ -4,6 +4,7 @@ import crypto from "crypto";
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { Resend } from 'resend';
+import ConfirmEmail from '../templates/emails/ConfirmationEmail';
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -51,12 +52,13 @@ export async function findAndCountAllUsersByUsername(username) {
 
 const resend = new Resend('re_8cUce6e4_8713GKcbFecTD66qnnVFQDJC');
 
-function sendEmail() {
+function sendEmail(verifiedtoken) {
+	const html = render(<ConfirmEmail verifiedToken={verifiedtoken} />);
 	return resend.emails.send({
 	  from: 'onboarding@resend.dev',
 	  to: 'kenza.schuler@gmail.com',
 	  subject: 'Hello World',
-	  html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
+	  html: html
 	});
 }
 
@@ -107,7 +109,7 @@ export async function registerUser(userDatas, bcrypt) {
 	// Send mail
 	if (newUser) {
 		try {
-			await sendEmail();
+			await sendEmail(newUser.verifiedtoken);
 			console.log("Email de confirmation envoyé avec succès.");
 		} catch (error) {
 			console.error("Erreur lors de l'envoi de l'email de confirmation:", error);
