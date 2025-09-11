@@ -1,7 +1,7 @@
 import { Formik, Field, Form } from 'formik';
 import * as Yup from 'yup';
 import CustomInputComponent from '../InputComponent';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import ToastNotification from './ToastNotification';
 
@@ -11,7 +11,7 @@ const BasicForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>('');
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const navigate = useNavigate();
 
@@ -60,6 +60,7 @@ const BasicForm = () => {
             setErrors({
               username: "Ce nom d'utilisateur est déjà pris"
             });
+            break;
           case "Impossible d’envoyer l’email de confirmation. Réessayez plus tard.":
             setToastMessage(data.error);
             break;
