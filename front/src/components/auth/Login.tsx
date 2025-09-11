@@ -65,7 +65,6 @@ const BasicForm = () => {
       console.error('Erreur détaillée:', error);
       setError(true);
       setErrorMessage(error.message || 'Erreur réseau. Veuillez réessayer plus tard.');
-      setToastMessage(error.message || "Erreur réseau. Veuillez réessayer plus tard.");
       setToastType('error');
     } finally {
       setSubmitting(false);
