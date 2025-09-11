@@ -20,13 +20,14 @@ const BasicForm = () => {
   const { login } = useAuth();
   const location = useLocation();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"error" | "success" | undefined>(undefined);
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-  
+
   console.log("BACKEND_URL utilisé:", API_URL);
   const handleSubmit = async (values: any, { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }) => {
     try {
       console.log("Envoi des données:", values); // Log des données envoyées
-  
+
       const response = await fetch(`${API_URL}/login`, {
         method: 'POST',
         headers: {
@@ -36,23 +37,25 @@ const BasicForm = () => {
         body: JSON.stringify(values),
       });
 
-      
+
       const data = await response.json();
       if (data.error) {
         throw new Error(data.error);
       }
-      
+
       if (!response.ok) {
         console.log("Status:", response.status); // Log du status
       }
-      
+
       if (data.token) {
-        
+
         const decoded = jwtDecode<DecodedToken>(data.token);
 
         if (decoded != null) {
             login(data.token, decoded.id, decoded.username);
             navigate('/game', { state: { message: 'Vous êtes connecté' } });
+            setToastMessage("Connexion réussie 🎉")
+            setToastType("success");
             throw new Error('Utilisateur non trouvé');
         } else {
           throw new Error("Impossible de vérifier l'utilisateur");
@@ -62,14 +65,17 @@ const BasicForm = () => {
       console.error('Erreur détaillée:', error);
       setError(true);
       setErrorMessage(error.message || 'Erreur réseau. Veuillez réessayer plus tard.');
+      setToastMessage(error.message || "Erreur réseau. Veuillez réessayer plus tard.");
+      setToastType('error');
     } finally {
       setSubmitting(false);
     }
   };
-  
+
   useEffect(() => {
     if (location.state?.message) {
       setToastMessage(location.state.message);
+      setToastType("success");
       navigate(location.pathname, { state: {} });
     }
 
@@ -77,11 +83,11 @@ const BasicForm = () => {
       const modal = document.getElementById('error_modal');
       (modal as HTMLDialogElement).showModal();
     }
-  }, [error]);
+  }, [error, location]);
 
   return (
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
-      <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
+      <ToastNotification message={toastMessage || ''} type={toastType} setMessage={setToastMessage} />
       <dialog id="error_modal" className="modal modal-bottom sm:modal-middle">
       <div className="modal-box">
         <div role="alert" className="alert alert-error">
@@ -99,7 +105,7 @@ const BasicForm = () => {
       </div>
     </dialog>
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
-        <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>  
+        <h1 className="font-bold text-center text-2xl mb-5">Connexion</h1>
         <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
           <Formik
             initialValues={{ email: '', password: '' }}
@@ -115,9 +121,9 @@ const BasicForm = () => {
                 <Field name="email" label="E-mail" component={CustomInputComponent} />
                 <Field name="password" type="password" label="Mot de passe" component={CustomInputComponent} />
 
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting} 
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
                   className="btn btn-primary w-full py-2.5 rounded-lg text-sm shadow-sm hover:shadow-md font-semibold text-center inline-block"
                 >
                   <span className="inline-block mr-2">Je me connecte</span>
@@ -128,7 +134,7 @@ const BasicForm = () => {
               </Form>
             )}
           </Formik>
-          
+
           {/* Boutons additionnels et Liens */}
           <div className="py-5">
             <div className="grid grid-cols-2 gap-1">
@@ -138,17 +144,17 @@ const BasicForm = () => {
                     type="button"
                     className="transition duration-200 mx-5 px-5 py-4 cursor-pointer font-normal text-sm rounded-lg hover:bg-base-100 focus:outline-none focus:bg-base-200 focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 ring-inset"
                   >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      stroke="currentColor" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                       className="w-4 h-4 inline-block align-text-bottom">
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                         strokeWidth="2"
-                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" 
+                        d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
                       />
                     </svg>
                     <span className='inline-block ml-1'>Pas de compte ? Je m'inscris</span>

@@ -12,6 +12,7 @@ const BasicForm = () => {
   const [error, setError] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>('');
+  const [toastType, setToastType] = useState<"error" | "success" | undefined>(undefined);
   const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
   const navigate = useNavigate();
 
@@ -36,6 +37,7 @@ const BasicForm = () => {
         navigate('/login', {
           state: { message: 'Inscription réussie. Veuillez vérifier votre email.' }
         });
+        setToastType("success");
       } else {
         // Gestion des différentes erreurs possibles du backend
         setErrorMessage(data.error);
@@ -63,6 +65,7 @@ const BasicForm = () => {
             break;
           case "Impossible d’envoyer l’email de confirmation. Réessayez plus tard.":
             setToastMessage(data.error);
+            setToastType("error");
             break;
         }
         setLoading(false);
@@ -103,7 +106,7 @@ const BasicForm = () => {
     </dialog>
 
     <div className="min-h-screen flex flex-col justify-center sm:py-12">
-      <ToastNotification message={toastMessage || ''} setMessage={setToastMessage} />
+      <ToastNotification message={toastMessage || ''} type={toastType} setMessage={setToastMessage} />
       <div className="p-10 xs:p-0 mx-auto md:w-full md:max-w-md">
         <h1 className="font-bold text-center text-2xl mb-5">Inscription au jeu</h1>
         <div className="bg-base-200 shadow w-full rounded-lg divide-y divide-gray-200">
