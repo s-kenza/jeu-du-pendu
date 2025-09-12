@@ -8,6 +8,8 @@ import Login from './components/auth/Login';
 import VerifyEmail from './components/auth/VerifyEmail';
 import Game from './components/game/Game';
 import { AuthProvider } from './components/context/AuthContext';
+import InBuilding from './components/InBuilding';
+import PrivacyPolicy from './components/PrivacyPolicy';
 
 const router = createBrowserRouter([
   {
@@ -30,6 +32,14 @@ const router = createBrowserRouter([
       {
         path: '/verify/:token',
         element: <VerifyEmail />
+      },
+      {
+        path: '/building',
+        element: <InBuilding />
+      },
+      {
+        path: '/privacy-policy',
+        element: <PrivacyPolicy />
       }
     ],
   },
@@ -39,6 +49,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
       <RouterProvider router={router} />
-    </AuthProvider> 
+    </AuthProvider>
   </React.StrictMode>
 );
