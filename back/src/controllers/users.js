@@ -59,7 +59,7 @@ function sendEmail(to, verifiedtoken) {
 	html = html.replace("{{TOKEN}}", verifiedtoken);
 
 	return resend.emails.send({
-	  from: 'onboarding@resend.dev',
+	  from: 'Jeu de Kenza <onboarding@resend.dev>',
 	  to,
 	  subject: '👋 Confirmez votre inscription',
 	  html,
