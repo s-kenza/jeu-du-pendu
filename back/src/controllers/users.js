@@ -6,6 +6,7 @@ import { dirname } from 'path';
 import { Resend } from 'resend';
 import fs from 'fs';
 import path from 'path';
+import nodemailer from "nodemailer";
 
 async function generateID(id) {
 	const { count } = await findAndCountAllUsersById(id);
@@ -51,12 +52,20 @@ export async function findAndCountAllUsersByUsername(username) {
 	});
 }
 
+function createTransporter() {
+	return nodemailer.createTransport({
+		service: 'gmail',
+		auth: {
+			user: process.env.GMAIL_APP_EMAIL,
+			pass: process.env.GMAIL_APP_PASSWORD,
+		}
+	});
+}
+
 const resend = new Resend('re_8cUce6e4_8713GKcbFecTD66qnnVFQDJC');
 
 function sendEmail(to, verifiedtoken) {
-	const templatePath = path.resolve(__dirname, "../templates/emails/confirmation.html");
-	let html = fs.readFileSync(templatePath, "utf-8");
-	html = html.replace("{{TOKEN}}", verifiedtoken);
+
 
 	return resend.emails.send({
 	  from: 'Jeu de Kenza <onboarding@resend.dev>',
@@ -109,8 +118,20 @@ export async function registerUser(userDatas, bcrypt) {
 	};
 
 	// Send mail
+	const transporter = createTransporter();
+	const templatePath = path.resolve(__dirname, "../templates/emails/confirmation.html");
+	let html = fs.readFileSync(templatePath, "utf-8");
+	html = html.replace("{{TOKEN}}", user.verifiedtoken);
+
+	const mailOptions = {
+		from: 'kenza.schuler@gmail.com',
+		to: user.email,
+		subject: '👋 Confirmez votre inscription',
+		html: html,
+	};
+
 	try {
-		await sendEmail(user.email, user.verifiedtoken);
+		await transporter.sendMail(mailOptions);
 		console.log("Email de confirmation envoyé avec succès.");
 		const newUser = await User.create(user);
 		return newUser;
