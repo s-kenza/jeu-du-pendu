@@ -2,7 +2,7 @@ import { useState } from "react";
 
 
 const PrivacyPolicy = () => {
-    const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [theme] = useState(localStorage.getItem('theme') || 'light');
     let style;
 
     if (theme == "dark") {
