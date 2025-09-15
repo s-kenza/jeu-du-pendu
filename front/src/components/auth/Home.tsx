@@ -13,6 +13,22 @@ const Layout: React.FC = () => {
   const { isAuthenticated } = useAuth();
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const onSelectMode = (theme: string) => {
+    if (theme === 'dark')
+      document.documentElement.setAttribute('data-theme', theme)
+    else
+      document.body.classList.remove('dark-mode')
+  }
+
+  useEffect(() => {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => onSelectMode(e.matches ? 'dark' : 'light'));
+    onSelectMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+
+    return () => {
+      window.matchMedia('(prefers-color-scheme: dark)').removeEventListener('change', () => {})
+    }
+  }, [])
+
   const isHomePage = location.pathname === '/';
 
   useEffect(() => {
@@ -40,9 +56,9 @@ const Layout: React.FC = () => {
                 word="Jeu du Pendu"
                 delayMultiple={0.08}
               />
-              </div>              
+              </div>
               <p className="text-lg mb-6 text-center max-w-lg">
-                Bienvenue dans le jeu du pendu ! Testez vos compétences en devinant les mots choisis par le système. 
+                Bienvenue dans le jeu du pendu ! Testez vos compétences en devinant les mots choisis par le système.
                 Amusez-vous tout en apprenant de nouveaux mots !
               </p>
               {isAuthenticated ? (

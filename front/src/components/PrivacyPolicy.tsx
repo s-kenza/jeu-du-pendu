@@ -3,9 +3,10 @@ import { useState } from "react";
 
 const PrivacyPolicy = () => {
     const [theme] = useState(localStorage.getItem('theme') || 'light');
+    const dataTheme = document.documentElement.getAttribute('data-theme');
     let style;
 
-    if (theme == "dark") {
+    if (theme == "dark" || dataTheme == "dark") {
         style = { color: "black" };
     } else {
         style = {};
